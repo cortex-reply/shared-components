@@ -1,0 +1,49 @@
+// See https://aka.ms/vscode-remote/devcontainer.json for format details or
+// https://aka.ms/vscode-dev-containers/definitions for sample configurations.
+{
+  "name": "Shared Components",
+  "dockerFile": "Dockerfile.vscode",
+  "remoteUser": "vscode",
+  "forwardPorts": [6066],
+  "mounts": [
+    "source=${localWorkspaceFolderBasename}-node_modules,target=${containerWorkspaceFolder}/node_modules,type=volume",
+    "source=${localWorkspaceFolderBasename}-pnpm-store,target=${containerWorkspaceFolder}/.pnpm-store,type=volume",
+  ],
+  "containerEnv": {
+    "NEXT_TELEMETRY_DISABLED": "1",
+    "BROWSER": "none",
+    "WATCHPACK_POLLING": "true"
+  },
+  "portsAttributes": {
+    "6066": {
+      "label": "Storybook",
+      "onAutoForward": "silent"
+    }
+  },
+
+  "postCreateCommand": {
+    "direcotry permissions": "doas chown -R vscode:wheel ${containerWorkspaceFolder}/node_modules && doas chown -R vscode:wheel ${containerWorkspaceFolder}/.pnpm-store",
+    "install modules": "cd ${containerWorkspaceFolder} && pnpm i"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "mikestead.dotenv",
+        "csstools.postcss",
+        "bradlc.vscode-tailwindcss",
+        "Orta.vscode-jest",
+        "humao.rest-client",
+        "yoavbls.pretty-ts-errors",
+        "ms-playwright.playwright",
+        "github.vscode-github-actions",
+        "lokalise.i18n-ally",
+        "GitHub.copilot",
+        "esbenp.prettier-vscode",
+        "mutantdino.resourcemonitor",
+        "VisualStudioExptTeam.vscodeintellicode",
+        "GitHub.vscode-pull-request-github"
+      ]
+    }
+  }
+}

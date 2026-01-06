@@ -1,0 +1,163 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Python/Overview" />
+
+# Python Packages
+
+The `python/` directory contains shared Python utilities and packages for use across Python applications.
+
+## Overview
+
+Python packages in this monorepo follow the same philosophy as JavaScript packages - providing reusable, well-documented utilities that can be published independently to PyPI.
+
+## Package Structure
+
+Each Python package should be in its own subdirectory with a `pyproject.toml` file:
+
+```
+python/
+├── cortex-shared-auth/          # Example auth utilities
+│   ├── src/cortex_shared_auth/
+│   │   ├── __init__.py
+│   │   └── ...
+│   └── pyproject.toml
+├── cortex-shared-utils/         # Example general utilities
+│   ├── src/cortex_shared_utils/
+│   │   ├── __init__.py
+│   │   └── ...
+│   └── pyproject.toml
+└── pyproject.toml               # Workspace config
+```
+
+## Development Setup
+
+### Prerequisites
+
+- Python >= 3.9
+- [uv](https://github.com/astral-sh/uv) - Fast Python package manager
+
+### Getting Started
+
+```bash
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install all dependencies
+cd python
+uv sync --all-extras
+```
+
+### Commands
+
+```bash
+# Activate virtual environment
+source .venv/bin/activate
+
+# Install/update dependencies
+uv sync
+
+# Add a new dependency
+uv add package-name
+
+# Add a dev dependency
+uv add --dev package-name
+
+# Run tests
+uv run pytest
+
+# Run linting and formatting
+uv run black .
+uv run isort .
+uv run flake8
+uv run mypy
+uv run pylint
+
+# Build packages
+uv run python -m build
+```
+
+## Creating a New Python Package
+
+1. Create a package directory:
+```bash
+mkdir -p python/my-package/src/my_package
+```
+
+2. Create `pyproject.toml`:
+```toml
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cortex-shared-my-package"
+version = "0.0.1"
+description = "My shared Python package"
+readme = "README.md"
+requires-python = ">=3.9"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "black>=23.0.0",
+    "mypy>=1.7.0",
+]
+```
+
+3. Create package files:
+```bash
+touch python/my-package/src/my_package/__init__.py
+touch python/my-package/README.md
+```
+
+## Publishing to PyPI
+
+### Setup
+
+1. Create a PyPI account: https://pypi.org/account/register/
+
+2. Configure trusted publishers (recommended):
+   - In your PyPI account settings, add this repository as a trusted publisher
+   - No secrets needed, uses GitHub OIDC
+
+3. Or use an API token:
+   - Generate token in PyPI settings
+   - Add to GitHub secrets as `PYPI_API_TOKEN`
+
+### Publishing
+
+1. Update version in `pyproject.toml`
+2. Commit and tag with `python-v0.1.0`
+3. Push tag: `git push origin python-v0.1.0`
+4. GitHub Actions automatically publishes to PyPI
+
+## Best Practices
+
+✅ **Do:**
+- Follow PEP 8 style guidelines
+- Add type hints to functions
+- Write comprehensive docstrings
+- Include unit tests
+- Document with README.md
+- Use semantic versioning
+
+❌ **Don't:**
+- Mix multiple packages in one directory
+- Hard-code configuration
+- Skip documentation
+- Ignore type checking
+
+## Tools
+
+- **[uv](https://github.com/astral-sh/uv)** - Fast package installer and resolver
+- **[Black](https://github.com/psf/black)** - Code formatter
+- **[isort](https://pycqa.github.io/isort/)** - Import sorter
+- **[pytest](https://pytest.org/)** - Testing framework
+- **[mypy](https://mypy.readthedocs.io/)** - Static type checker
+- **[flake8](https://flake8.pycqa.org/)** - Style guide enforcement
+
+## Resources
+
+- [Python Packaging Guide](https://packaging.python.org/)
+- [PEP 8 Style Guide](https://pep8.org/)
+- [uv Documentation](https://github.com/astral-sh/uv)

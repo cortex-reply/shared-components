@@ -1,0 +1,36 @@
+name: Publish Python Packages
+
+on:
+  push:
+    tags:
+      - 'python-v*'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies
+        working-directory: python
+        run: ~/.local/bin/uv sync
+
+      - name: Build packages
+        working-directory: python
+        run: ~/.local/bin/uv run python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          directory: python/dist
+          skip-existing: true

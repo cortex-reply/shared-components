@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@cortex-shared/ui": ["packages/ui/src"],
+      "@cortex-shared/ui/*": ["packages/ui/src/*"],
+      "@cortex-shared/auth": ["packages/auth/src"],
+      "@cortex-shared/auth/*": ["packages/auth/src/*"]
+    }
+  },
+  "include": ["packages"],
+  "exclude": ["node_modules", "dist", "build"]
+}

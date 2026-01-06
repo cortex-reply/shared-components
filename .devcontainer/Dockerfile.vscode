@@ -1,0 +1,21 @@
+FROM node:20-alpine
+ARG DEBIAN_FRONTEND=noninteractive
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+# Create the user
+
+RUN     apk add doas git github-cli; \
+        adduser $USERNAME -G wheel; \
+        echo 'permit nopass :wheel as root' >> /etc/doas.d/doas.conf
+# ********************************************************
+# * Anything else you want to do like clean up goes here *
+# ********************************************************
+
+# install and use PNPM instead of NPM
+RUN npm install -g pnpm
+
+# [Optional] Set the default user. Omit if you want to keep the default as root.
+USER $USERNAME
+

@@ -1,0 +1,330 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Authentication/Overview" />
+
+# Authentication Utilities
+
+`@cortex-shared/auth` provides TypeScript functions for authentication in Node.js and Next.js applications.
+
+## Features
+
+- 🔐 JWT token generation and verification
+- 🔑 Password hashing and verification with bcryptjs
+- ✅ Email and password validation
+- 💪 Password strength checking with feedback
+- 📦 Zero external dependencies (beyond bcryptjs and jsonwebtoken)
+- ⚡ Async password operations
+- 🛡️ Security best practices built-in
+
+## Installation
+
+```bash
+npm install @cortex-shared/auth
+# or
+pnpm add @cortex-shared/auth
+```
+
+## Modules
+
+### JWT Functions
+
+Handle JSON Web Token creation, verification, and decoding.
+
+#### `generateToken(payload, secret, options?)`
+
+Create a signed JWT token.
+
+```typescript
+import { generateToken } from '@cortex-shared/auth';
+
+const token = generateToken(
+  {
+    id: 'user-123',
+    email: 'user@example.com',
+    role: 'admin'
+  },
+  'your-secret-key',
+  {
+    expiresIn: '24h',
+    issuer: 'my-app'
+  }
+);
+```
+
+**Parameters:**
+- `payload` - User data to encode in token
+- `secret` - Secret key for signing
+- `options.expiresIn` - Token expiration (default: '24h')
+- `options.issuer` - Token issuer claim
+- `options.audience` - Token audience claim
+- `options.subject` - Token subject claim
+
+**Returns:** Signed JWT token string
+
+#### `verifyToken(token, secret)`
+
+Verify and decode a JWT token.
+
+```typescript
+import { verifyToken } from '@cortex-shared/auth';
+
+try {
+  const payload = verifyToken(token, 'your-secret-key');
+  console.log(payload.id); // 'user-123'
+} catch (error) {
+  console.error('Token is invalid or expired');
+}
+```
+
+**Returns:** Decoded token payload
+
+**Throws:** Error if token is invalid or expired
+
+#### `decodeToken(token)`
+
+Decode token without verification (use cautiously).
+
+```typescript
+import { decodeToken } from '@cortex-shared/auth';
+
+const payload = decodeToken(token);
+if (payload && !isTokenExpired(token)) {
+  // Safe to use
+}
+```
+
+**Returns:** Decoded payload or null if invalid
+
+#### `isTokenExpired(token)`
+
+Check if a token has expired without verification.
+
+```typescript
+import { isTokenExpired } from '@cortex-shared/auth';
+
+if (isTokenExpired(token)) {
+  // Refresh token needed
+}
+```
+
+**Returns:** Boolean
+
+### Password Functions
+
+Handle password hashing and verification.
+
+#### `hashPassword(password, saltRounds?)`
+
+Hash a password using bcryptjs.
+
+```typescript
+import { hashPassword } from '@cortex-shared/auth';
+
+const hash = await hashPassword('myPassword123!');
+// Store hash in database
+```
+
+**Parameters:**
+- `password` - Password to hash
+- `saltRounds` - Cost factor for hashing (default: 10)
+
+**Returns:** Promise&lt;string&gt; - Hashed password
+
+#### `verifyPassword(password, hash)`
+
+Verify a password against a hash.
+
+```typescript
+import { verifyPassword } from '@cortex-shared/auth';
+
+const isMatch = await verifyPassword(inputPassword, storedHash);
+if (isMatch) {
+  // Login successful
+}
+```
+
+**Returns:** Promise&lt;boolean&gt;
+
+### Validation Functions
+
+Validate and sanitize user input.
+
+#### `isValidEmail(email)`
+
+Validate email format.
+
+```typescript
+import { isValidEmail } from '@cortex-shared/auth';
+
+if (isValidEmail('user@example.com')) {
+  // Email is valid
+}
+```
+
+**Returns:** Boolean
+
+#### `sanitizeEmail(email)`
+
+Normalize email (lowercase and trim).
+
+```typescript
+import { sanitizeEmail } from '@cortex-shared/auth';
+
+const normalized = sanitizeEmail('  User@Example.com  ');
+// 'user@example.com'
+```
+
+**Returns:** Normalized email string
+
+#### `isStrongPassword(password)`
+
+Check if password meets strength requirements:
+- At least 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one digit
+- At least one special character (!@#$%^&*)
+
+```typescript
+import { isStrongPassword } from '@cortex-shared/auth';
+
+if (isStrongPassword(password)) {
+  // Password is strong
+}
+```
+
+**Returns:** Boolean
+
+#### `getPasswordStrengthFeedback(password)`
+
+Get detailed password strength assessment.
+
+```typescript
+import { getPasswordStrengthFeedback } from '@cortex-shared/auth';
+
+const { score, feedback } = getPasswordStrengthFeedback('myPass');
+// {
+//   score: 2,
+//   feedback: [
+//     'Password should be at least 8 characters',
+//     'Password should include a special character (!@#$%^&*)'
+//   ]
+// }
+```
+
+**Returns:** Object with:
+- `score` - Number 0-5 indicating strength
+- `feedback` - Array of improvement suggestions
+
+## Complete Example
+
+```typescript
+import {
+  generateToken,
+  verifyToken,
+  hashPassword,
+  verifyPassword,
+  isValidEmail,
+  isStrongPassword,
+  getPasswordStrengthFeedback,
+} from '@cortex-shared/auth';
+
+// User registration
+async function registerUser(email: string, password: string) {
+  // Validate input
+  if (!isValidEmail(email)) {
+    throw new Error('Invalid email');
+  }
+
+  const { score, feedback } = getPasswordStrengthFeedback(password);
+  if (!isStrongPassword(password)) {
+    throw new Error(`Password too weak: ${feedback.join(', ')}`);
+  }
+
+  // Hash password
+  const passwordHash = await hashPassword(password);
+
+  // Store user in database
+  const user = {
+    email,
+    passwordHash,
+  };
+
+  return user;
+}
+
+// User login
+async function loginUser(email: string, password: string, secret: string) {
+  // Fetch user from database
+  const user = await findUserByEmail(email);
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  // Verify password
+  const isMatch = await verifyPassword(password, user.passwordHash);
+  if (!isMatch) {
+    throw new Error('Invalid password');
+  }
+
+  // Generate token
+  const token = generateToken(
+    {
+      id: user.id,
+      email: user.email,
+    },
+    secret,
+    {
+      expiresIn: '24h',
+    }
+  );
+
+  return { token, user };
+}
+
+// Token verification
+async function verifyUserToken(token: string, secret: string) {
+  try {
+    const payload = verifyToken(token, secret);
+    return payload;
+  } catch (error) {
+    throw new Error('Invalid or expired token');
+  }
+}
+```
+
+## Best Practices
+
+✅ **Do:**
+- Use strong passwords (8+ chars, mixed case, numbers, symbols)
+- Store JWT secrets in environment variables
+- Use HTTPS in production
+- Set appropriate token expiration times
+- Hash passwords before storing
+- Validate all user input
+
+❌ **Don't:**
+- Hard-code secrets in source code
+- Trust unverified JWT tokens
+- Use weak password requirements
+- Store plain-text passwords
+- Share JWT secrets between services
+
+## Type Definitions
+
+```typescript
+interface TokenPayload {
+  id: string;
+  email: string;
+  role?: string;
+  [key: string]: any;
+}
+
+interface TokenOptions {
+  expiresIn?: string | number;
+  issuer?: string;
+  audience?: string;
+  subject?: string;
+}
+```

@@ -1,0 +1,93 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Guides/1 Welcome" />
+
+# Cortex Shared Components
+
+Welcome to the unified Storybook documentation for **Cortex Shared Components**. This site documents all reusable components, utilities, and libraries across the monorepo.
+
+## 📦 What's Inside
+
+### UI Components
+Interactive React components built with shadcn/ui patterns and Tailwind CSS. Perfect for building consistent user interfaces across applications.
+
+- **Button** - Versatile button component with multiple variants and sizes
+- _More components coming soon_
+
+### Authentication Utilities
+TypeScript functions for handling authentication in Node.js and Next.js applications.
+
+- JWT token management
+- Password hashing and verification
+- Email and password validation
+
+### Python Packages
+Python utilities for shared functionality across Python applications.
+
+## 🚀 Quick Start
+
+### Installation
+
+Install the packages you need from npm:
+
+```bash
+npm install @cortex-shared/ui
+npm install @cortex-shared/auth
+```
+
+### Usage Examples
+
+#### UI Components
+```typescript
+import { Button } from '@cortex-shared/ui';
+
+export default function App() {
+  return (
+    <Button variant="default" size="lg" onClick={() => alert('Clicked!')}>
+      Click me
+    </Button>
+  );
+}
+```
+
+#### Auth Utilities
+```typescript
+import { generateToken, verifyPassword, isValidEmail } from '@cortex-shared/auth';
+
+// Generate a token
+const token = generateToken(
+  { id: '123', email: 'user@example.com' },
+  'your-secret-key'
+);
+
+// Hash and verify passwords
+const hash = await hashPassword('myPassword123!');
+const isMatch = await verifyPassword('myPassword123!', hash);
+
+// Validate inputs
+if (isValidEmail('user@example.com')) {
+  console.log('Email is valid');
+}
+```
+
+## 📚 Navigation
+
+- **Components** - Browse all UI components with interactive examples
+- **Auth** - Authentication utilities documentation
+- **Python** - Python packages and utilities
+- **Guides** - Additional guides and best practices
+
+## 🤝 Contributing
+
+To add new components or utilities:
+
+1. Create component or utility file
+2. Add stories/documentation (`.mdx` files or `.stories.tsx` for components)
+3. Update this guide with examples
+4. Submit a pull request
+
+## 📖 Learn More
+
+- [UI Components](/?path=/docs/components--welcome)
+- [Auth Utilities](/?path=/docs/auth-overview--page)
+- [Python Packages](/?path=/docs/python-overview--page)
