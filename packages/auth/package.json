@@ -1,28 +1,57 @@
 {
-  "name": "@cortex-shared/auth",
+  "name": "cortex-auth",
   "version": "0.0.1",
   "description": "Shared authentication utilities for Node.js and Next.js applications",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cortex-reply/shared-components.git",
+    "directory": "packages/auth"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "dev": "tsc --watch",
     "build": "tsc",
     "type-check": "tsc --noEmit",
     "lint": "eslint src/**/*.ts"
   },
+  "keywords": [
+    "authentication",
+    "jwt",
+    "password",
+    "security"
+  ],
+  "author": "Cortex Reply",
+  "license": "MIT",
   "dependencies": {
-    "jsonwebtoken": "^9.0.3",
-    "bcryptjs": "^2.4.3"
+    "bcryptjs": "^2.4.3",
+    "jose": "^6.1.3",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "peerDependencies": {
+    "next": ">=15.0.0"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.7",
     "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^20.10.5",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
     "eslint": "^8.56.0",
+    "next": "^15.0.0",
     "typescript": "^5.3.3"
   }
 }

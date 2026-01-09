@@ -1,0 +1,43 @@
+{
+  "branches": [
+    "main",
+    {
+      "name": "beta",
+      "prerelease": true
+    },
+    {
+      "name": "alpha",
+      "prerelease": true
+    }
+  ],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/changelog",
+    [
+      "@semantic-release/npm",
+      {
+        "pkgRoot": "packages/auth",
+        "tarballDir": "packages/auth/release"
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "publishCmd": "npm publish --registry https://npm.pkg.github.com --access public",
+        "shell": true
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "packages/auth/package.json",
+          "packages/auth/CHANGELOG.md"
+        ],
+        "message": "chore(auth): release v${nextRelease.version}\n\n${nextRelease.notes}"
+      }
+    ],
+    "@semantic-release/github"
+  ]
+}

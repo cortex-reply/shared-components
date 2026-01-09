@@ -1,0 +1,131 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Authentication/Payload JWT" />
+
+# Payload JWT User Authentication
+
+This module provides JWT token verification and session management utilities for OAuth2/OIDC authentication with support for Bearer token extraction and validation.
+
+## Exported Functions
+
+### `verifySession(req: NextRequest): Promise<AuthInfo | undefined>`
+
+Verifies a JWT token from a Next.js request and returns authentication information.
+
+**Parameters:**
+- `req` (NextRequest): The incoming Next.js request object
+
+**Returns:** 
+- Promise resolving to `AuthInfo` object if verification succeeds, or `undefined` if no valid token is found
+
+**Features:**
+- Extracts Bearer token from Authorization header
+- Validates JWT signature using JWKS from OAuth provider
+- Supports RS256 algorithm
+- Extracts user scopes, email, and name from token payload
+- Returns subject (sub), expiration (exp), scopes array, and extra user data
+
+**Example:**
+```typescript
+import { verifySession } from '@cortex-shared/auth';
+
+export async function GET(req: NextRequest) {
+  const authInfo = await verifySession(req);
+  
+  if (!authInfo) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  
+  console.log('User:', authInfo.sub);
+  console.log('Scopes:', authInfo.scopes);
+}
+```
+
+---
+
+### `verifyToken(bearer: string): Promise<AuthInfo | undefined>`
+
+Verifies a JWT Bearer token string and returns authentication information.
+
+**Parameters:**
+- `bearer` (string): The JWT token to verify
+
+**Returns:** 
+- Promise resolving to `AuthInfo` object if verification succeeds, or `undefined` if verification fails
+
+**Features:**
+- Validates JWT signature using JWKS from OAuth provider
+- Verifies token issuer and algorithm (RS256)
+- Extracts user claims including sub, exp, scopes, email, and name
+- Handles JWT verification errors gracefully
+
+**Example:**
+```typescript
+import { verifyToken } from '@cortex-shared/auth';
+
+const token = 'eyJhbGc...'; // Your JWT token
+
+const authInfo = await verifyToken(token);
+if (authInfo) {
+  console.log('Token is valid for user:', authInfo.sub);
+}
+```
+
+---
+
+### `isTokenExpired(token: string): Promise<boolean>`
+
+Checks whether a JWT token has expired.
+
+**Parameters:**
+- `token` (string): The JWT token to check
+
+**Returns:** 
+- Promise resolving to `true` if token is expired or invalid, `false` if token is still valid
+
+**Features:**
+- Uses `verifyToken()` to decode and validate the token
+- Compares token expiration time (exp) against current time
+- Returns `true` for invalid tokens
+
+**Example:**
+```typescript
+import { isTokenExpired } from '@cortex-shared/auth';
+
+const token = 'eyJhbGc...';
+
+const expired = await isTokenExpired(token);
+if (expired) {
+  console.log('Token needs to be refreshed');
+}
+```
+
+---
+
+## Types
+
+### `AuthInfo`
+
+```typescript
+interface AuthInfo {
+  sub: string;           // Subject (user ID)
+  exp: number;          // Expiration time (Unix timestamp)
+  scopes: string[];     // Array of permission scopes
+  extra?: Record<string, any>;  // Additional claims (email, name, etc)
+}
+```
+
+## Environment Variables
+
+The module requires the following environment variable to be set:
+
+- `OAUTH_ISSUER`: The OAuth2/OIDC issuer URL (e.g., `https://login.microsoftonline.com/<tenant>/v2.0`)
+
+The module automatically discovers the JWKS endpoint from the provider's well-known configuration URL.
+
+## Error Handling
+
+All functions gracefully handle errors:
+- Invalid tokens return `undefined`
+- Network errors during JWKS discovery log warnings and fall back to alternative endpoints
+- Expired tokens are properly identified by `isTokenExpired()`

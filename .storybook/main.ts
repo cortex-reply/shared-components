@@ -3,8 +3,8 @@ import type { StorybookConfig } from '@storybook/react-vite';
 const config: StorybookConfig = {
   stories: [
     '../packages/ui/**/*.stories.@(js|jsx|mjs|ts|tsx)',
-    '../packages/ui/*.mdx',
-    '../packages/auth/*.mdx',
+    '../packages/ui/**/*.mdx',
+    '../packages/auth/**/*.mdx',
     '../python/*.mdx',
     '../docs/*.mdx',
   ],
