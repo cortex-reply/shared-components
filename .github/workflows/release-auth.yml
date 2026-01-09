@@ -38,6 +38,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build package
+        run: pnpm -C ./packages/auth run build
+
       - name: Release with semantic-release
         uses: cycjimmy/semantic-release-action@v4
         with:
