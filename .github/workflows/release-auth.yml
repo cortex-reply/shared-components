@@ -38,13 +38,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build auth package
-        run: pnpm run build --filter=@cortex-shared/auth
-
-      - name: Verify built dist
-        working-directory: packages/auth
-        run: ls -la dist/
-
       - name: Release with semantic-release
         uses: cycjimmy/semantic-release-action@v4
         with:
