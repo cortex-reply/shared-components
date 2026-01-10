@@ -1,6 +1,7 @@
 import type { User } from '@/types'
-import type { Payload } from 'payload'
+import type { SanitizedConfig } from 'payload'
 import { decodeJwt } from 'jose'
+import { getPayload } from 'payload'
 
 type AccountType = NonNullable<User['accounts']>[number]
 
@@ -36,8 +37,9 @@ function upsertAccount(existing: AccountType[] = [], account: AccountType) {
   return [...existing, nextRow]
 }
 
-export async function persistTokens(userId: string, account: AccountType, payload: Payload) {
-  
+export async function persistTokens(userId: string, account: AccountType, payloadConfig: SanitizedConfig) {
+  const payload = await getPayload({ config: payloadConfig })
+
   const fullUser = await payload.findByID({
     collection: "users",
     id: userId,
