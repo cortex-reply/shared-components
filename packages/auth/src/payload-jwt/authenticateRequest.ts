@@ -6,38 +6,47 @@ import { type Payload } from 'payload'
 
 import { NextAuthRequest } from "next-auth";
 
+interface AuthError extends Error {
+    statusCode: number;
+}
 
- interface User {
-  id: string;
-  email: string;
-  emailVerified?: string | null;
-  name?: string | null;
-  image?: string | null;
-  /**
-   * The role of the user
-   */
-  role: 'user' | 'admin' | 'digital-colleague';
-  enabled?: boolean | null;
-  accounts?:
+function createAuthError(message: string, statusCode: number): AuthError {
+    const error = new Error(message) as AuthError;
+    error.statusCode = statusCode;
+    return error;
+}
+
+interface User {
+    id: string;
+    email: string;
+    emailVerified?: string | null;
+    name?: string | null;
+    image?: string | null;
+    /**
+     * The role of the user
+     */
+    role: 'user' | 'admin' | 'digital-colleague';
+    enabled?: boolean | null;
+    accounts?:
     | {
         provider: string;
         providerAccountId: string;
         type: 'oidc' | 'oauth' | 'email' | 'webauthn';
         id?: string | null;
-      }[]
+    }[]
     | null;
-  sessions?:
+    sessions?:
     | {
         sessionToken: string;
         expires: string;
         id?: string | null;
-      }[]
+    }[]
     | null;
-  updatedAt: string;
-  createdAt: string;
-  enableAPIKey?: boolean | null;
-  apiKey?: string | null;
-  apiKeyIndex?: string | null;
+    updatedAt: string;
+    createdAt: string;
+    enableAPIKey?: boolean | null;
+    apiKey?: string | null;
+    apiKeyIndex?: string | null;
 }
 
 
@@ -55,18 +64,25 @@ export async function authenticateRequest({ req, payload }: { req: NextAuthReque
     } else {
         type = 'bearer'
         const session = await verifySession(req)
-        if (!session || !session.sub || !session.extra) throw new Error("No valid session found")
-        if (!payload) throw new Error("Payload instance is required for Keycloak user normalisation")
+
+        if (!session || !session.sub || !session.extra) throw createAuthError("No valid session found", 401);
+        const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID!;
+        const permissions = (session.resource_access?.[OAUTH_CLIENT_ID]?.roles as string[] | undefined);
+        if (!permissions) throw createAuthError("User does not have permission to access this application.", 403);
+
+        if (!payload) throw createAuthError("Payload instance is required for Keycloak user normalisation", 500);
         const payloadUser = (await payload.find({ collection: 'users', depth: 1, limit: 1, draft: false, overrideAccess: true, where: { email: { equals: session.extra.email } } })).docs[0]
 
         if (!payloadUser && session.extra) {
+
+
             // create the user in Payload
             const newUser = await payload.create({
                 collection: 'users',
                 data: {
                     email: session.extra.email,
                     name: session.extra.name,
-                    role: 'user',
+                    role: permissions[0] || 'user',
                     enabled: true,
                     accounts: [
                         {
@@ -86,15 +102,29 @@ export async function authenticateRequest({ req, payload }: { req: NextAuthReque
                 method: 'bearer',
             }
         } else if (payloadUser) {
+            // update user role if changed
+            if (payloadUser.role !== permissions[0]) {
+                await payload.update({
+                    collection: 'users',
+                    id: payloadUser.id,
+                    data: {
+                        role: permissions[0] || 'user',
+                    },
+                    draft: false,
+                    overrideAccess: true,
+                })
+                console.log(`Updated Payload user role for ${payloadUser.email} to ${permissions}`);
+            }
+
             return {
                 id: payloadUser.id,
                 email: payloadUser.email,
                 name: payloadUser.name,
-                role: payloadUser.role,
+                role: permissions[0] || 'user',
                 method: 'bearer',
             }
         } else {
-            throw new Error("No user found for the given session")
+            throw createAuthError("No user found for the given session", 401);
         }
     }
 }

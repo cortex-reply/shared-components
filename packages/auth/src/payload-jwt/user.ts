@@ -6,6 +6,7 @@ export interface AuthInfo {
     sub: string;
     exp: number;
     scopes: string[];
+    resource_access?: Record<string, any>;
     extra?: Record<string, any>;
 }
 
@@ -70,6 +71,7 @@ export async function verifySession(req: NextRequest): Promise<AuthInfo | undefi
                 sub: (payload.sub as string) ?? "unknown",
                 exp: (payload.exp as number) ?? 0,
                 scopes: typeof payload.scp === "string" ? payload.scp.split(" ") : [],
+                resource_access: payload.resource_access as Record<string, any> | undefined,
                 extra: { email: payload.email, name: payload.name },
             };
         } catch (error) {
