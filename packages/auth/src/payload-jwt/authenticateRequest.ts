@@ -16,6 +16,8 @@ function createAuthError(message: string, statusCode: number): AuthError {
     return error;
 }
 
+export type { AuthError };
+
 interface User {
     id: string;
     email: string;
