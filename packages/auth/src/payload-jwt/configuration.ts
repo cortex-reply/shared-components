@@ -1,10 +1,15 @@
+import type { User } from '@/types'
+import type { Payload } from 'payload'
+import { decodeJwt } from 'jose'
 
-function upsertAccount(existing: any[] = [], account: any) {
+type AccountType = NonNullable<User['accounts']>[number]
+
+function upsertAccount(existing: AccountType[] = [], account: AccountType) {
   const provider = account.provider
   const providerAccountId = account.providerAccountId
 
   const idx = existing.findIndex(
-    (a) => a.provider === provider && a.providerAccountId === providerAccountId
+    (a: AccountType) => a.provider === provider && a.providerAccountId === providerAccountId
   )
 
   const nextRow = {
@@ -20,7 +25,7 @@ function upsertAccount(existing: any[] = [], account: any) {
     id_token: account.id_token ?? null,
     token_type: account.token_type ?? null,
     scope: account.scope ?? null,
-    session_state: (account as any).session_state ?? null,
+    session_state: account.session_state ?? null,
   }
 
   if (idx >= 0) {
@@ -31,22 +36,26 @@ function upsertAccount(existing: any[] = [], account: any) {
   return [...existing, nextRow]
 }
 
-export async function persistTokens(userId: string, account: any) {
-  const payload = await getPayload({ config: payloadConfig })
-
+export async function persistTokens(userId: string, account: AccountType, payload: Payload) {
+  
   const fullUser = await payload.findByID({
     collection: "users",
     id: userId,
     depth: 0,
   })
 
-  const existing = (fullUser as any).accounts ?? []
+  const existing = (fullUser as User).accounts ?? []
   const accounts = upsertAccount(existing, account)
-
+  let role = 'user'; // default role
+  if (account && account.access_token) {
+    const decodedJWT = decodeJwt(account.access_token);
+    const permissions = ((decodedJWT.resource_access as Record<string, { roles?: string[] }>)?.[process.env.OAUTH_CLIENT_ID!]?.roles as string[] | undefined);
+    role = permissions?.[0] || 'user';
+  }
   await payload.update({
     collection: "users",
     id: userId,
-    data: { accounts },
+    data: { accounts, role },
     overrideAccess: true,
   })
 }

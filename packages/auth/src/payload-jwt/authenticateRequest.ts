@@ -53,7 +53,6 @@ interface User {
 
 
 export async function authenticateRequest({ req, payload }: { req: NextAuthRequest, payload?: Payload }) {
-    let type = 'cookie'
     if (req.auth) {
         const user = req.auth.user as User
         return {
@@ -64,12 +63,11 @@ export async function authenticateRequest({ req, payload }: { req: NextAuthReque
             method: 'cookie',
         }
     } else {
-        type = 'bearer'
         const session = await verifySession(req)
 
         if (!session || !session.sub || !session.extra) throw createAuthError("No valid session found", 401);
         const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID!;
-        const permissions = (session.resource_access?.[OAUTH_CLIENT_ID]?.roles as string[] | undefined);
+        const permissions = ((session.resource_access as Record<string, { roles?: string[] }>)?.[OAUTH_CLIENT_ID]?.roles as string[] | undefined);
         if (!permissions) throw createAuthError("User does not have permission to access this application.", 403);
 
         if (!payload) throw createAuthError("Payload instance is required for Keycloak user normalisation", 500);

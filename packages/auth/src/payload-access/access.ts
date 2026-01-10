@@ -1,13 +1,12 @@
-// import { 'admin', 'user' } from '@/collections/Users'
-import { User } from '@/payload-types'
 import { AccessArgs } from 'payload'
 import type {  Where } from 'payload'
+import type { User } from '@/types'
 
 /**
  * Checks that the request is authenticated
  */
 
-export const isAuthenticated = ({ req: { user } }: AccessArgs<User>) => {
+export const isAuthenticated = ({ req: { user } }: AccessArgs<Partial<Partial<User>>>) => {
     return Boolean(user)
 }
 
@@ -15,7 +14,7 @@ export const isAuthenticated = ({ req: { user } }: AccessArgs<User>) => {
  * Checks that the user is a 'user' or 'admin' i.e. they are human
  */
 
-export const isUser = ({ req: { user } }: AccessArgs<User>) => {
+export const isUser = ({ req: { user } }: AccessArgs<Partial<User>>) => {
     if (!user) return false
     if (user.role === 'user') {
         return true
@@ -30,7 +29,7 @@ export const isUser = ({ req: { user } }: AccessArgs<User>) => {
  * Checks that the user is a 'digital-colleague'
  */
 
-export const isDigitalColleague = ({ req: { user } }: AccessArgs<User>) => {
+export const isDigitalColleague = ({ req: { user } }: AccessArgs<Partial<User>>) => {
     if (!user) return false
     if (user.role === 'digital-colleague') {
         return true
@@ -42,7 +41,7 @@ export const isDigitalColleague = ({ req: { user } }: AccessArgs<User>) => {
  * Checks that the user is an 'admin'
  */
 
-export const isAdmin = ({ req: { user } }: AccessArgs<User>): boolean => {
+export const isAdmin = ({ req: { user } }: AccessArgs<Partial<User>>): boolean => {
     // console.log('Checking isAdminUser for user:', user)
     if (user?.role === 'admin') {
         return true
@@ -54,7 +53,7 @@ export const isAdmin = ({ req: { user } }: AccessArgs<User>): boolean => {
 /**
  * Users can edit their own profile
  */
-export const editOwnProfile = ({ req: { user }, id, data }: AccessArgs<User>): boolean => {
+export const editOwnProfile = ({ req: { user }, data }: AccessArgs<Partial<User>>): boolean => {
 
     // Allow admins to edit anything
     if (user?.role === 'admin') {
@@ -67,7 +66,7 @@ export const editOwnProfile = ({ req: { user }, id, data }: AccessArgs<User>): b
 /**
  * can edit owned items
  */
-export const isOwned = ({ req: { user } }: AccessArgs<User>): boolean | Where => {
+export const isOwned = ({ req: { user } }: AccessArgs<Partial<User>>): boolean | Where => {
     if (!user) return false
 
     // Allow admins to edit anything
@@ -86,7 +85,7 @@ export const isOwned = ({ req: { user } }: AccessArgs<User>): boolean | Where =>
 /**
  * User is in the member relationship of the item
  */
-export const isMember = ({ req: { user } }: AccessArgs<User>): boolean | Where => {
+export const isMember = ({ req: { user } }: AccessArgs<Partial<User>>): boolean | Where => {
     if (!user) return false
 
     // Allow admins to edit anything
@@ -108,7 +107,7 @@ export const isMember = ({ req: { user } }: AccessArgs<User>): boolean | Where =
 /**
  * User is in the member relationship of the item
  */
-export const isMemberOrOwner = ({ req: { user } }: AccessArgs<User>): boolean | Where => {
+export const isMemberOrOwner = ({ req: { user } }: AccessArgs<Partial<User>>): boolean | Where => {
     if (!user) return false
 
     // Allow admins to edit anything

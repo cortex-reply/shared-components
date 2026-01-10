@@ -1,15 +1,12 @@
+import type { User } from '@/types'
+import type { Payload } from 'payload'
 
-type AccountRow = {
-  provider?: string;
-  access_token?: string | null;
-  refresh_token?: string | null;
-  expires_at?: number | null; // seconds since epoch
-};
+type AccountRow = NonNullable<User['accounts']>[number]
 
 export async function getAccessToken(payload: Payload, userId: string) {
   const user = await payload.findByID({ collection: "users", id: userId, depth: 0 });
 
-  const kc = (user as any)?.accounts?.find((a: AccountRow) => a.provider === "keycloak") as AccountRow | undefined;
+  const kc = (user as Partial<User>)?.accounts?.find((a: AccountRow) => a.provider === "keycloak") as AccountRow | undefined;
   if (!kc?.access_token) return null;
 
   const expiresAt = kc.expires_at ?? 0;
@@ -37,8 +34,8 @@ export async function getAccessToken(payload: Payload, userId: string) {
   const newExpiresAt = Math.floor(Date.now() / 1000 + json.expires_in);
 
   // Persist back into users.accounts[] (update your matching row logic as needed)
-  const accounts = ((user as any).accounts ?? []).map((a: any) =>
-    a.provider === "keycloak"
+  const accounts = ((user as Partial<User>).accounts ?? []).map((a: AccountRow | undefined) =>
+    a?.provider === "keycloak"
       ? {
           ...a,
           access_token: json.access_token,

@@ -1,13 +1,13 @@
 
-import { jwtVerify, createRemoteJWKSet, decodeJwt } from "jose";
+import { jwtVerify, createRemoteJWKSet } from "jose";
 import type { NextRequest } from "next/server";
 
 export interface AuthInfo {
     sub: string;
     exp: number;
     scopes: string[];
-    resource_access?: Record<string, any>;
-    extra?: Record<string, any>;
+    resource_access?: Record<string, unknown>;
+    extra?: Record<string, unknown>;
 }
 
 
@@ -55,14 +55,13 @@ export async function verifySession(req: NextRequest): Promise<AuthInfo | undefi
     const bearer = extractBearer(req);
 
     if (bearer) {
-        // for development ONLY, use a dummy token
         try {
-            const decodedJWT = decodeJwt(bearer);
+
 
             // Get JWKS dynamically from well-known endpoint
             const jwks = await getJWKS();
 
-            const { payload, protectedHeader } = await jwtVerify(bearer, jwks, {
+            const { payload } = await jwtVerify(bearer, jwks, {
                 issuer: OIDC_ISSUER,
                 algorithms: ["RS256"],
             });
@@ -71,7 +70,7 @@ export async function verifySession(req: NextRequest): Promise<AuthInfo | undefi
                 sub: (payload.sub as string) ?? "unknown",
                 exp: (payload.exp as number) ?? 0,
                 scopes: typeof payload.scp === "string" ? payload.scp.split(" ") : [],
-                resource_access: payload.resource_access as Record<string, any> | undefined,
+                resource_access: payload.resource_access as Record<string, unknown> | undefined,
                 extra: { email: payload.email, name: payload.name },
             };
         } catch (error) {
@@ -79,9 +78,6 @@ export async function verifySession(req: NextRequest): Promise<AuthInfo | undefi
             return undefined;
         }
     }
-
-    // fallback: NextAuth session (optional)
-
     return undefined;
 }
 
@@ -91,12 +87,11 @@ export async function verifyToken(bearer: string): Promise<AuthInfo | undefined>
     if (bearer) {
         // for development ONLY, use a dummy token
         try {
-            const decodedJWT = decodeJwt(bearer);
 
             // Get JWKS dynamically from well-known endpoint
             const jwks = await getJWKS();
 
-            const { payload, protectedHeader } = await jwtVerify(bearer, jwks, {
+            const { payload } = await jwtVerify(bearer, jwks, {
                 issuer: OIDC_ISSUER,
                 algorithms: ["RS256"],
             });
@@ -105,6 +100,7 @@ export async function verifyToken(bearer: string): Promise<AuthInfo | undefined>
                 sub: (payload.sub as string) ?? "unknown",
                 exp: (payload.exp as number) ?? 0,
                 scopes: typeof payload.scp === "string" ? payload.scp.split(" ") : [],
+                resource_access: payload.resource_access as Record<string, unknown> | undefined,
                 extra: { email: payload.email, name: payload.name },
             };
         } catch (error) {
