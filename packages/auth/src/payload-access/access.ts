@@ -5,16 +5,14 @@ import type { User } from '@/types'
 /**
  * Checks that the request is authenticated
  */
-
-export const isAuthenticated = ({ req: { user } }: AccessArgs<Partial<Partial<User>>>) => {
+const isAuthenticated = ({ req: { user } }: AccessArgs<Partial<Partial<User>>>) => {
     return Boolean(user)
 }
 
 /**
  * Checks that the user is a 'user' or 'admin' i.e. they are human
  */
-
-export const isUser = ({ req: { user } }: AccessArgs<Partial<User>>) => {
+const isUser = ({ req: { user } }: AccessArgs<Partial<User>>) => {
     if (!user) return false
     if (user.role === 'user') {
         return true
@@ -28,8 +26,7 @@ export const isUser = ({ req: { user } }: AccessArgs<Partial<User>>) => {
 /**
  * Checks that the user is a 'digital-colleague'
  */
-
-export const isDigitalColleague = ({ req: { user } }: AccessArgs<Partial<User>>) => {
+const isDigitalColleague = ({ req: { user } }: AccessArgs<Partial<User>>) => {
     if (!user) return false
     if (user.role === 'digital-colleague') {
         return true
@@ -40,8 +37,7 @@ export const isDigitalColleague = ({ req: { user } }: AccessArgs<Partial<User>>)
 /**
  * Checks that the user is an 'admin'
  */
-
-export const isAdmin = ({ req: { user } }: AccessArgs<Partial<User>>): boolean => {
+const isAdmin = ({ req: { user } }: AccessArgs<Partial<User>>): boolean => {
     // console.log('Checking isAdminUser for user:', user)
     if (user?.role === 'admin') {
         return true
@@ -49,11 +45,10 @@ export const isAdmin = ({ req: { user } }: AccessArgs<Partial<User>>): boolean =
     return false
 }
 
-
 /**
  * Users can edit their own profile
  */
-export const editOwnProfile = ({ req: { user }, data }: AccessArgs<Partial<User>>): boolean => {
+const editOwnProfile = ({ req: { user }, data }: AccessArgs<Partial<User>>): boolean => {
 
     // Allow admins to edit anything
     if (user?.role === 'admin') {
@@ -66,7 +61,7 @@ export const editOwnProfile = ({ req: { user }, data }: AccessArgs<Partial<User>
 /**
  * can edit owned items
  */
-export const isOwned = ({ req: { user } }: AccessArgs<Partial<User>>): boolean | Where => {
+const isOwned = ({ req: { user } }: AccessArgs<Partial<User>>): boolean | Where => {
     if (!user) return false
 
     // Allow admins to edit anything
@@ -85,7 +80,7 @@ export const isOwned = ({ req: { user } }: AccessArgs<Partial<User>>): boolean |
 /**
  * User is in the member relationship of the item
  */
-export const isMember = ({ req: { user } }: AccessArgs<Partial<User>>): boolean | Where => {
+const isMember = ({ req: { user } }: AccessArgs<Partial<User>>): boolean | Where => {
     if (!user) return false
 
     // Allow admins to edit anything
@@ -103,11 +98,10 @@ export const isMember = ({ req: { user } }: AccessArgs<Partial<User>>): boolean 
     return query
 }
 
-
 /**
  * User is in the member relationship of the item
  */
-export const isMemberOrOwner = ({ req: { user } }: AccessArgs<Partial<User>>): boolean | Where => {
+const isMemberOrOwner = ({ req: { user } }: AccessArgs<Partial<User>>): boolean | Where => {
     if (!user) return false
 
     // Allow admins to edit anything
@@ -130,4 +124,15 @@ export const isMemberOrOwner = ({ req: { user } }: AccessArgs<Partial<User>>): b
         ],
     }
     return query
+}
+
+export const payloadAcl = {
+    isAuthenticated,
+    isUser,
+    isDigitalColleague,
+    isAdmin,
+    editOwnProfile,
+    isOwned,
+    isMember,
+    isMemberOrOwner,
 }
