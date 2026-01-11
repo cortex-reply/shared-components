@@ -105,26 +105,26 @@ export const config = {
 };
 ```
 
-# Database with Backend
+### Database with Backend
 
 We store the session in the Payload database.
 Optionally, we can also store the auth tokens in the database to be used for onward API calls.
 
-## Browser flow
+#### Browser flow
 
 1. Users access the application 
 2. are redirected to the oAuth provider to authenticate
 3. Users are given a session and a session cookie to identify them for subsequent requests.
 4. We also store the tokens in the database (NOT in the users browser)
 
-## Direct API flow
+#### Direct API flow
 1. User accesses the API with a pre-retrievd `Bearer` token.
 2. The API route establishes the user **AND creates the user if they dont exist**
 3. The API route can obtain the users token from the database
 4. The token is refreshed if required before returning it.
 
 
-## Extend the Users collection..
+#### Extend the Users collection..
 
 ```js
 //.. existing imports
@@ -148,7 +148,7 @@ export const Users: CollectionConfig = {
 }
 ```
 
-## Setup Authentication
+#### Setup Authentication
 
 ```js
 // auth.config.ts
@@ -195,7 +195,7 @@ declare module "next-auth" {
 }
 ```
 
-## Example API
+#### Example API
 
 ```js
 import { auth } from "@/lib/auth";
@@ -216,3 +216,15 @@ export const GET = auth(async (req) => {
 ```
 
 
+#### Environment Variables
+```bash
+PAYLOAD_SECRET=xxxxx
+DATABASE_URI=postgres://payload:payload@172.17.0.1:5432/test
+NEXT_PUBLIC_SERVER_URL=http://localhost:4011
+
+
+OAUTH_CLIENT_ID=test-app
+OAUTH_CLIENT_SECRET=xxxxxx
+OAUTH_ISSUER="https://keycloak.cortexreply.ai/realms/development"
+
+```
