@@ -1,7 +1,5 @@
 import type { User } from '@/types'
-import type { SanitizedConfig } from 'payload'
 import { decodeJwt } from 'jose'
-import { getPayload } from 'payload'
 import type { NextAuthConfig } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
 
@@ -39,9 +37,7 @@ function upsertAccount(existing: AccountType[] = [], account: AccountType) {
   return [...existing, nextRow]
 }
 
-async function persistTokens(userId: string, account: AccountType, payloadConfig: SanitizedConfig) {
-  const payload = await getPayload({ config: payloadConfig })
-
+async function persistTokens(userId: string, account: AccountType, payload: Payload) {
   const fullUser = await payload.findByID({
     collection: "users",
     id: userId,
@@ -66,7 +62,7 @@ async function persistTokens(userId: string, account: AccountType, payloadConfig
 
 type NextAuthConfigFunction = { session: { maxAge?: number }; oauth: { scope?: string } };
 
-const databaseWithBackend = (payloadConfig: SanitizedConfig, authConfig?: NextAuthConfigFunction, ): NextAuthConfig => ({
+const databaseWithBackend = (payload: Payload, authConfig?: NextAuthConfigFunction, ): NextAuthConfig => ({
   secret: process.env.PAYLOAD_SECRET,
   session: {
     maxAge: authConfig?.session.maxAge ?? 60 * 30 * 8, // 8 hours
@@ -91,12 +87,12 @@ const databaseWithBackend = (payloadConfig: SanitizedConfig, authConfig?: NextAu
   events: {
     // fires when an OAuth account is linked  [NextAuth](https://next-auth.js.org/configuration/events)
     async linkAccount({ user, account }) {
-      await persistTokens(user.id as string, account as unknown as AccountType, payloadConfig)
+      await persistTokens(user.id as string, account as unknown as AccountType, payload)
     },
 
     // fires on every sign-in  [NextAuth](https://next-auth.js.org/configuration/events)
     async signIn({ user, account }) {
-      if (account) await persistTokens(user.id as string, account as unknown as AccountType, payloadConfig)
+      if (account) await persistTokens(user.id as string, account as unknown as AccountType, payload)
     },
   },
 });
