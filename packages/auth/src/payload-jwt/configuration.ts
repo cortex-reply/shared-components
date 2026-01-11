@@ -2,8 +2,6 @@ import type { User } from '@/types'
 import type { SanitizedConfig } from 'payload'
 import { decodeJwt } from 'jose'
 import { getPayload } from 'payload'
-import type { NextAuthConfig } from "next-auth";
-import KeycloakProvider from "next-auth/providers/keycloak";
 
 type AccountType = NonNullable<User['accounts']>[number]
 
@@ -74,51 +72,31 @@ async function persistTokens(userId: string, account: AccountType, payloadConfig
   })
 }
 
-type NextAuthConfigFunction = { session: { maxAge?: number }; oauth: { scope?: string } };
-
-const databaseWithBackend = (payloadConfig: SanitizedConfig, authConfig?: NextAuthConfigFunction, ): NextAuthConfig => ({
-  secret: process.env.PAYLOAD_SECRET,
-  session: {
-    maxAge: authConfig?.session.maxAge ?? 60 * 30 * 8, // 8 hours
-    strategy: 'database',
-  },
-  providers: [KeycloakProvider({
-    clientId: process.env.OAUTH_CLIENT_ID,
-    clientSecret: process.env.OAUTH_CLIENT_SECRET,
-    issuer: process.env.OAUTH_ISSUER,
-    authorization: { params: { scope: authConfig?.oauth.scope ?? "openid profile email offline_access" } },
-    profile(profile, tokens) {
-      let role = 'user'; // default role
-      if (tokens && tokens.access_token) {
-        const decodedJWT = decodeJwt(tokens.access_token);
-        const permissions = ((decodedJWT.resource_access as Record<string, { roles?: string[] }>)?.[process.env.OAUTH_CLIENT_ID!]?.roles as string[] | undefined);
-        role = permissions?.[0] || 'user';
-      }
-      return { id: profile.sub, role, ...profile }
+const userCollectionDatabaseFields = [{
+      name: 'role',
+      type: 'select',
+      options: [
+        {
+          label: 'User',
+          value: 'user',
+        },
+        {
+          label: 'Admin',
+          value: 'admin',
+        },
+        {
+          label: 'Digital Colleague',
+          value: 'digital-colleague',
+        },
+      ],
+      defaultValue: 'user',
+      required: true,
+      admin: {
+        description: 'The role of the user',
+      },
     },
-  }),
-  ],
-  events: {
-    // fires when an OAuth account is linked  [NextAuth](https://next-auth.js.org/configuration/events)
-    async linkAccount({ user, account }) {
-      await persistTokens(user.id as string, account as unknown as AccountType, payloadConfig)
-    },
-
-    // fires on every sign-in  [NextAuth](https://next-auth.js.org/configuration/events)
-    async signIn({ user, account }) {
-      if (account) await persistTokens(user.id as string, account as unknown as AccountType, payloadConfig)
-    },
-  },
-});
-
-declare module "next-auth" {
-  interface Session {
-    accessToken?: string;
-  }
-}
-
-
-const userCollectionDatabaseFields = {
+    { name: 'enabled', type: 'checkbox', label: 'Enabled', defaultValue: true },
+    {
       name: "accounts",
       type: "array",
       admin: { disabled: false }, // optional
@@ -136,7 +114,7 @@ const userCollectionDatabaseFields = {
         { name: "scope", type: "text", admin: { disabled: true } },
         { name: "session_state", type: "text", admin: { disabled: true } },
       ],
-    };
+    }];
 
 export const payloadAuthConfig = { 
   
