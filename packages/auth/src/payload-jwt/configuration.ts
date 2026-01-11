@@ -66,17 +66,17 @@ async function persistTokens(userId: string, account: AccountType, payloadConfig
 
 type NextAuthConfigFunction = { session: { maxAge?: number }; oauth: { scope?: string } };
 
-const databaseWithBackend = (authConfig: NextAuthConfigFunction, payloadConfig: SanitizedConfig): NextAuthConfig => ({
+const databaseWithBackend = (payloadConfig: SanitizedConfig, authConfig?: NextAuthConfigFunction, ): NextAuthConfig => ({
   secret: process.env.PAYLOAD_SECRET,
   session: {
-    maxAge: authConfig.session.maxAge ?? 60 * 30 * 8, // 8 hours
+    maxAge: authConfig?.session.maxAge ?? 60 * 30 * 8, // 8 hours
     strategy: 'database',
   },
   providers: [KeycloakProvider({
     clientId: process.env.OAUTH_CLIENT_ID,
     clientSecret: process.env.OAUTH_CLIENT_SECRET,
     issuer: process.env.OAUTH_ISSUER,
-    authorization: { params: { scope: authConfig.oauth.scope ?? "openid profile email offline_access" } },
+    authorization: { params: { scope: authConfig?.oauth.scope ?? "openid profile email offline_access" } },
     profile(profile, tokens) {
       let role = 'user'; // default role
       if (tokens && tokens.access_token) {
