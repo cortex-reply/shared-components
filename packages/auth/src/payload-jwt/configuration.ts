@@ -138,21 +138,10 @@ const userCollectionDatabaseFields = {
       ],
     };
 
-    export const eventsPersistTokens = (payloadConfig: SanitizedConfig) => ({
-  // fires when an OAuth account is linked  [NextAuth](https://next-auth.js.org/configuration/events)
-  async linkAccount({ user, account }: { user: { id: string }; account: AccountType }) {
-    await persistTokens(user.id as string, account as unknown as AccountType, payloadConfig)
-  },
-
-  // fires on every sign-in  [NextAuth](https://next-auth.js.org/configuration/events)
-  async signIn({ user, account }: { user: { id: string }; account: AccountType | null }) {
-    if (account) await persistTokens(user.id as string, account as unknown as AccountType, payloadConfig)
-  },
-});
-
-export const payloadAuthConfig = (payloadConfig: SanitizedConfig) => ({ 
-  databaseWithBackend: (authConfig?: NextAuthConfigFunction) => databaseWithBackend(payloadConfig, authConfig),
-  userCollectionDatabaseFields, 
-  eventsPersistTokens: eventsPersistTokens(payloadConfig), 
+export const payloadAuthConfig = { 
+  
+  userCollectionDatabaseFields,
+  persistTokens,
+  
   profileRoles 
-});
+};
