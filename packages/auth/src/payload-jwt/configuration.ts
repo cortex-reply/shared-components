@@ -129,4 +129,4 @@ const userCollectionDatabaseFields = {
     };
 
 
-export const payloadConfig = { databaseWithBackend, userCollectionDatabaseFields };
+export const payloadAuthConfig = { databaseWithBackend, userCollectionDatabaseFields };
