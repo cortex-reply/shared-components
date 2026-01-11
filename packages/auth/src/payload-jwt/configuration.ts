@@ -1,5 +1,6 @@
 import type { User } from '@/types'
 import { decodeJwt } from 'jose'
+import type { Payload } from 'payload'
 import type { NextAuthConfig } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
 
