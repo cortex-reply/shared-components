@@ -1,6 +1,7 @@
 import type { User } from '@/types'
+import type { SanitizedConfig } from 'payload'
 import { decodeJwt } from 'jose'
-import type { Payload } from 'payload'
+import { getPayload } from 'payload'
 import type { NextAuthConfig } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
 
@@ -38,7 +39,19 @@ function upsertAccount(existing: AccountType[] = [], account: AccountType) {
   return [...existing, nextRow]
 }
 
-async function persistTokens(userId: string, account: AccountType, payload: Payload) {
+function profileRoles(profile: { sub: string; [key: string]: unknown }, tokens: { access_token?: string; [key: string]: unknown }) {
+  let role = 'user'; // default role
+  if (tokens && tokens.access_token) {
+    const decodedJWT = decodeJwt(tokens.access_token);
+    const permissions = ((decodedJWT.resource_access as Record<string, { roles?: string[] }>)?.[process.env.OAUTH_CLIENT_ID!]?.roles as string[] | undefined);
+    role = permissions?.[0] || 'user';
+  }
+  return { id: profile.sub, role, ...profile }
+}
+
+async function persistTokens(userId: string, account: AccountType, payloadConfig: SanitizedConfig) {
+  const payload = await getPayload({ config: payloadConfig })
+
   const fullUser = await payload.findByID({
     collection: "users",
     id: userId,
@@ -63,7 +76,7 @@ async function persistTokens(userId: string, account: AccountType, payload: Payl
 
 type NextAuthConfigFunction = { session: { maxAge?: number }; oauth: { scope?: string } };
 
-const databaseWithBackend = (payload: Payload, authConfig?: NextAuthConfigFunction, ): NextAuthConfig => ({
+const databaseWithBackend = (payloadConfig: SanitizedConfig, authConfig?: NextAuthConfigFunction, ): NextAuthConfig => ({
   secret: process.env.PAYLOAD_SECRET,
   session: {
     maxAge: authConfig?.session.maxAge ?? 60 * 30 * 8, // 8 hours
@@ -88,12 +101,12 @@ const databaseWithBackend = (payload: Payload, authConfig?: NextAuthConfigFuncti
   events: {
     // fires when an OAuth account is linked  [NextAuth](https://next-auth.js.org/configuration/events)
     async linkAccount({ user, account }) {
-      await persistTokens(user.id as string, account as unknown as AccountType, payload)
+      await persistTokens(user.id as string, account as unknown as AccountType, payloadConfig)
     },
 
     // fires on every sign-in  [NextAuth](https://next-auth.js.org/configuration/events)
     async signIn({ user, account }) {
-      if (account) await persistTokens(user.id as string, account as unknown as AccountType, payload)
+      if (account) await persistTokens(user.id as string, account as unknown as AccountType, payloadConfig)
     },
   },
 });
@@ -125,5 +138,21 @@ const userCollectionDatabaseFields = {
       ],
     };
 
+    export const eventsPersistTokens = (payloadConfig: SanitizedConfig) => ({
+  // fires when an OAuth account is linked  [NextAuth](https://next-auth.js.org/configuration/events)
+  async linkAccount({ user, account }: { user: { id: string }; account: AccountType }) {
+    await persistTokens(user.id as string, account as unknown as AccountType, payloadConfig)
+  },
 
-export const payloadAuthConfig = { databaseWithBackend, userCollectionDatabaseFields };
+  // fires on every sign-in  [NextAuth](https://next-auth.js.org/configuration/events)
+  async signIn({ user, account }: { user: { id: string }; account: AccountType | null }) {
+    if (account) await persistTokens(user.id as string, account as unknown as AccountType, payloadConfig)
+  },
+});
+
+export const payloadAuthConfig = (payloadConfig: SanitizedConfig) => ({ 
+  databaseWithBackend: (authConfig?: NextAuthConfigFunction) => databaseWithBackend(payloadConfig, authConfig),
+  userCollectionDatabaseFields, 
+  eventsPersistTokens: eventsPersistTokens(payloadConfig), 
+  profileRoles 
+});
