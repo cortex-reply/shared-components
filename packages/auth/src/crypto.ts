@@ -29,7 +29,7 @@ export function encryptToken(token: string | null | undefined, secret: string): 
     // Return format: iv:authTag:encryptedData
     return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
   } catch (error) {
-    console.error('Error encrypting token:', error);
+    console.error('Error encrypting token');
     return null;
   }
 }
@@ -48,7 +48,8 @@ export function decryptToken(encryptedToken: string | null | undefined, secret: 
     const parts = encryptedToken.split(':');
     if (parts.length !== 3) {
       // Token might be unencrypted (backward compatibility during migration)
-      console.warn('Token format is invalid or unencrypted');
+      // Log for audit purposes
+      console.warn('Encountered potentially unencrypted token in database - migration may be needed');
       return encryptedToken;
     }
     
@@ -71,7 +72,7 @@ export function decryptToken(encryptedToken: string | null | undefined, secret: 
     
     return decrypted;
   } catch (error) {
-    console.error('Error decrypting token:', error);
+    console.error('Error decrypting token');
     return null;
   }
 }

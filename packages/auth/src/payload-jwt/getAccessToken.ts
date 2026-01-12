@@ -9,6 +9,9 @@ export async function getAccessToken(payload: Payload, userId: string) {
 
   const kc = (user as Partial<User>)?.accounts?.find((a: AccountRow) => a.provider === "keycloak") as AccountRow | undefined;
   
+  // Check if keycloak account exists
+  if (!kc) return null;
+  
   // Get the PAYLOAD_SECRET for decryption
   const secret = process.env.PAYLOAD_SECRET;
   if (!secret) {
@@ -16,8 +19,8 @@ export async function getAccessToken(payload: Payload, userId: string) {
   }
 
   // Decrypt the access token
-  const decryptedAccessToken = decryptToken(kc?.access_token, secret);
-  if (!decryptedAccessToken || !kc) return null;
+  const decryptedAccessToken = decryptToken(kc.access_token, secret);
+  if (!decryptedAccessToken) return null;
 
   const expiresAt = kc.expires_at ?? 0;
   const stillValid = expiresAt === 0 || Date.now() < expiresAt * 1000 - 30_000; // 30s skew
@@ -51,7 +54,8 @@ export async function getAccessToken(payload: Payload, userId: string) {
           ...a,
           access_token: encryptToken(json.access_token, secret),
           expires_at: newExpiresAt,
-          refresh_token: encryptToken(json.refresh_token, secret) ?? a.refresh_token,
+          // Use new refresh token if provided, otherwise keep the existing encrypted one
+          refresh_token: json.refresh_token ? encryptToken(json.refresh_token, secret) : a.refresh_token,
         }
       : a
   );
