@@ -2,6 +2,7 @@ import type { User } from '@/types'
 import type { SanitizedConfig } from 'payload'
 import { decodeJwt } from 'jose'
 import { getPayload } from 'payload'
+import { encryptToken } from '../crypto'
 
 type AccountType = NonNullable<User['accounts']>[number]
 
@@ -13,15 +14,21 @@ function upsertAccount(existing: AccountType[] = [], account: AccountType) {
     (a: AccountType) => a.provider === provider && a.providerAccountId === providerAccountId
   )
 
+  // Get the PAYLOAD_SECRET for encryption
+  const secret = process.env.PAYLOAD_SECRET;
+  if (!secret) {
+    throw new Error('PAYLOAD_SECRET environment variable is required for token encryption');
+  }
+
   const nextRow = {
     ...(idx >= 0 ? existing[idx] : {}),
     provider,
     providerAccountId,
     type: account.type,
 
-    // token fields (must match your Users.accounts[] schema)
-    access_token: account.access_token ?? null,
-    refresh_token: account.refresh_token ?? null,
+    // Encrypt tokens before storing (must match your Users.accounts[] schema)
+    access_token: encryptToken(account.access_token, secret),
+    refresh_token: encryptToken(account.refresh_token, secret),
     expires_at: account.expires_at ?? null,
     id_token: account.id_token ?? null,
     token_type: account.token_type ?? null,
