@@ -161,7 +161,7 @@ export async function authenticateRequestHeaders({ headers, payload }: { headers
             overrideAccess: true,
         })
         console.log("Created new Payload user for Keycloak user:", newUser.id, newUser.email)
-        return { method: 'bearer', ...newUser }
+        return { user: newUser }
 
     } else if (payloadUser) {
         // update user role if changed
@@ -178,7 +178,7 @@ export async function authenticateRequestHeaders({ headers, payload }: { headers
             console.log(`Updated Payload user role for ${payloadUser.email} to ${permissions}`);
         }
 
-        return {method: 'bearer', ...payloadUser }
+        return {user: payloadUser }
 
     } else {
         throw createAuthError("No user found for the given session", 401);
