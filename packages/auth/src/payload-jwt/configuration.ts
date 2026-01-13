@@ -5,7 +5,22 @@ import { getPayload } from 'payload'
 
 type AccountType = NonNullable<User['accounts']>[number]
 
-function upsertAccount(existing: AccountType[] = [], account: AccountType) {
+// Add a more permissive type for incoming NextAuth accounts
+type IncomingAccount = {
+  provider: string
+  providerAccountId: string
+  type: string  // Changed from strict union to string
+  access_token?: string | null
+  refresh_token?: string | null
+  expires_at?: number | null
+  id_token?: string | null
+  token_type?: string | null
+  scope?: string | null
+  session_state?: string | null
+  [key: string]: any  // Allow additional properties
+}
+
+function upsertAccount(existing: AccountType[] = [], account: IncomingAccount): AccountType[] {
   const provider = account.provider
   const providerAccountId = account.providerAccountId
 
@@ -13,11 +28,10 @@ function upsertAccount(existing: AccountType[] = [], account: AccountType) {
     (a: AccountType) => a.provider === provider && a.providerAccountId === providerAccountId
   )
 
-  const nextRow = {
-    ...(idx >= 0 ? existing[idx] : {}),
+  const nextRow: AccountType = {
     provider,
     providerAccountId,
-    type: account.type,
+    type: account.type as any,  // Cast to match AccountType
 
     // token fields (must match your Users.accounts[] schema)
     access_token: account.access_token ?? null,
@@ -27,7 +41,7 @@ function upsertAccount(existing: AccountType[] = [], account: AccountType) {
     token_type: account.token_type ?? null,
     scope: account.scope ?? null,
     session_state: account.session_state ?? null,
-  }
+  } as AccountType
 
   if (idx >= 0) {
     const copy = [...existing]
@@ -47,7 +61,8 @@ function profileRoles(profile: { sub: string; [key: string]: unknown }, tokens: 
   return { id: profile.sub, role, ...profile }
 }
 
-async function persistTokens(userId: string, account: AccountType, payloadConfig: Promise<SanitizedConfig>) {
+// Change the account parameter type to IncomingAccount
+async function persistTokens(userId: string, account: IncomingAccount, payloadConfig: Promise<SanitizedConfig>) {
   const payload = await getPayload({ config: await payloadConfig })
 
   const fullUser = await payload.findByID({

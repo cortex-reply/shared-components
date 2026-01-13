@@ -54,8 +54,8 @@ interface User {
 }
 
 export interface AuthenticateRequestOptions {
-  req: AuthRequest
-  payload: Payload
+    req: AuthRequest
+    payload: Payload
 }
 
 
@@ -102,11 +102,8 @@ export async function authenticateRequest({ req, payload }: AuthenticateRequestO
             })
             console.log("Created new Payload user for Keycloak user:", newUser.id, newUser.email)
             return {
-                id: newUser.id,
-                email: newUser.email,
-                name: newUser.name,
-                role: newUser.role,
-                method: 'bearer',
+                
+                method: 'bearer', ...newUser
             }
         } else if (payloadUser) {
             // update user role if changed
@@ -123,13 +120,7 @@ export async function authenticateRequest({ req, payload }: AuthenticateRequestO
                 console.log(`Updated Payload user role for ${payloadUser.email} to ${permissions}`);
             }
 
-            return {
-                id: payloadUser.id,
-                email: payloadUser.email,
-                name: payloadUser.name,
-                role: permissions[0] || 'user',
-                method: 'bearer',
-            }
+            return { method: 'bearer', ...payloadUser }
         } else {
             throw createAuthError("No user found for the given session", 401);
         }
@@ -138,7 +129,7 @@ export async function authenticateRequest({ req, payload }: AuthenticateRequestO
 
 export async function authenticateRequestHeaders({ headers, payload }: { headers: Headers, payload?: Payload }) {
     if (headers.get('authorization')) {
-        
+
         const session = await verifyToken(headers.get('authorization')!.replace('Bearer ', ''));
 
         if (!session || !session.sub || !session.extra) throw createAuthError("No valid session found", 401);
@@ -170,13 +161,8 @@ export async function authenticateRequestHeaders({ headers, payload }: { headers
                 overrideAccess: true,
             })
             console.log("Created new Payload user for Keycloak user:", newUser.id, newUser.email)
-            return {
-                id: newUser.id,
-                email: newUser.email,
-                name: newUser.name,
-                role: newUser.role,
-                method: 'bearer',
-            }
+            return { method: 'bearer', ...newUser }
+
         } else if (payloadUser) {
             // update user role if changed
             if (payloadUser.role !== permissions[0]) {
@@ -192,13 +178,8 @@ export async function authenticateRequestHeaders({ headers, payload }: { headers
                 console.log(`Updated Payload user role for ${payloadUser.email} to ${permissions}`);
             }
 
-            return {
-                id: payloadUser.id,
-                email: payloadUser.email,
-                name: payloadUser.name,
-                role: permissions[0] || 'user',
-                method: 'bearer',
-            }
+            return {method: 'bearer', ...payloadUser }
+
         } else {
             throw createAuthError("No user found for the given session", 401);
         }
