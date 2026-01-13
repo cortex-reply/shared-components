@@ -127,7 +127,7 @@ export async function authenticateRequest({ req, payload }: AuthenticateRequestO
     }
 }
 
-export async function authenticateRequestHeaders({ headers, payload }: { headers: Headers, payload: Payload }): Promise<{ user: User }> {
+export async function authenticateRequestHeaders({ headers, payload }: { headers: Headers, payload: Payload }) {
     if (!headers.get('authorization')) {
         throw createAuthError("No authorization header provided", 401);
     }
@@ -161,7 +161,7 @@ export async function authenticateRequestHeaders({ headers, payload }: { headers
             overrideAccess: true,
         })
         console.log("Created new Payload user for Keycloak user:", newUser.id, newUser.email)
-        return { user: newUser as User }
+        return { user: { ...newUser, collection: 'users' as const } }
 
     } else if (payloadUser) {
         // update user role if changed
@@ -178,7 +178,7 @@ export async function authenticateRequestHeaders({ headers, payload }: { headers
             console.log(`Updated Payload user role for ${payloadUser.email} to ${permissions}`);
         }
 
-        return { user: payloadUser as User }
+        return { user: { ...payloadUser, collection: 'users' as const } }
 
     } else {
         throw createAuthError("No user found for the given session", 401);
