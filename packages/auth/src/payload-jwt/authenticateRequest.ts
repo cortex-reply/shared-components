@@ -4,7 +4,9 @@ import { verifySession, verifyToken } from "./user";
 
 import { type Payload } from 'payload'
 
-import { NextAuthRequest } from "next-auth";
+import { type NextAuthRequest } from "next-auth";
+
+export type AuthRequest = NextAuthRequest
 
 interface AuthError extends Error {
     statusCode: number;
@@ -51,8 +53,13 @@ interface User {
     apiKeyIndex?: string | null;
 }
 
+export interface AuthenticateRequestOptions {
+  req: AuthRequest
+  payload: Payload
+}
 
-export async function authenticateRequest({ req, payload }: { req: NextAuthRequest, payload?: Payload }) {
+
+export async function authenticateRequest({ req, payload }: AuthenticateRequestOptions) {
     if (req.auth) {
         const user = req.auth.user as User
         return {

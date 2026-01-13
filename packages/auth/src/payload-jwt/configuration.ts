@@ -47,8 +47,8 @@ function profileRoles(profile: { sub: string; [key: string]: unknown }, tokens: 
   return { id: profile.sub, role, ...profile }
 }
 
-async function persistTokens(userId: string, account: AccountType, payloadConfig: SanitizedConfig) {
-  const payload = await getPayload({ config: payloadConfig })
+async function persistTokens(userId: string, account: AccountType, payloadConfig: Promise<SanitizedConfig>) {
+  const payload = await getPayload({ config: await payloadConfig })
 
   const fullUser = await payload.findByID({
     collection: "users",
