@@ -144,9 +144,10 @@ export const Users: CollectionConfig = {
   auth: {
     strategies: [
       {
-        name: 'bearer-strategy', // if you need to access Payload resources using a Bearer token.
+        name: 'bearer-strategy',
         authenticate: async ({ payload, headers }) => {
-          return authenticateRequestHeaders(headers, payload)
+          const result = await authenticateRequestHeaders({headers, payload})
+          return result as any
         },
       },
     ],
@@ -189,12 +190,12 @@ secret: process.env.PAYLOAD_SECRET,
   events: {
   // fires when an OAuth account is linked  [NextAuth](https://next-auth.js.org/configuration/events)
   async linkAccount({ user, account }) {
-    await payloadAuthConfig.persistTokens(user.id, account, payloadConfig)
+    if (account && user.id) await payloadAuthConfig.persistTokens(user.id, account, payloadConfig)
   },
 
   // fires on every sign-in  [NextAuth](https://next-auth.js.org/configuration/events)
   async signIn({ user, account }) {
-    if (account) await payloadAuthConfig.persistTokens(user.id, account, payloadConfig)
+    if (account && user.id) await payloadAuthConfig.persistTokens(user.id, account, payloadConfig)
   },
 }
 };

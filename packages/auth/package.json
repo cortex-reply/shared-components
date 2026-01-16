@@ -39,10 +39,16 @@
   "peerDependencies": {
     "next": ">=15.0.0",
     "next-auth": ">=5.0.0-beta.30",
-    "payload": ">=3.70.0"
+    "payload": "^3.x"
   },
   "peerDependenciesMeta": {
     "next": {
+      "optional": true
+    },
+    "next-auth": {
+      "optional": true
+    },
+    "payload": {
       "optional": true
     }
   },
