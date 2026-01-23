@@ -2,7 +2,7 @@ import type { User } from '@/types'
 import type { SanitizedConfig } from 'payload'
 import { decodeJwt } from 'jose'
 import { getPayload } from 'payload'
-
+import { payloadAcl } from '../payload-access/access.js'
 type AccountType = NonNullable<User['accounts']>[number]
 
 // Add a more permissive type for incoming NextAuth accounts
@@ -51,7 +51,7 @@ function upsertAccount(existing: AccountType[] = [], account: IncomingAccount): 
   return [...existing, nextRow]
 }
 
-function profileRoles(profile: { sub: string; [key: string]: unknown }, tokens: { access_token?: string; [key: string]: unknown }) {
+function profileRoles(profile: { sub: string;[key: string]: unknown }, tokens: { access_token?: string;[key: string]: unknown }) {
   let role = 'user'; // default role
   if (tokens && tokens.access_token) {
     const decodedJWT = decodeJwt(tokens.access_token);
@@ -88,53 +88,75 @@ async function persistTokens(userId: string, account: IncomingAccount, payloadCo
 }
 
 const userCollectionDatabaseFields = [{
-      name: 'role',
-      type: 'select',
-      options: [
-        {
-          label: 'User',
-          value: 'user',
-        },
-        {
-          label: 'Admin',
-          value: 'admin',
-        },
-        {
-          label: 'Digital Colleague',
-          value: 'digital-colleague',
-        },
-      ],
-      defaultValue: 'user',
-      required: true,
-      admin: {
-        description: 'The role of the user',
+  name: 'role',
+  type: 'select',
+  options: [
+    {
+      label: 'User',
+      value: 'user',
+    },
+    {
+      label: 'Admin',
+      value: 'admin',
+    },
+    {
+      label: 'Digital Colleague',
+      value: 'digital-colleague',
+    },
+  ],
+  defaultValue: 'user',
+  required: true,
+  admin: {
+    description: 'The role of the user',
+  },
+},
+{ name: 'enabled', type: 'checkbox', label: 'Enabled', defaultValue: true },
+{
+  name: "accounts",
+  type: "array",
+  admin: { disabled: false }, // optional
+  fields: [
+    { name: "provider", type: "text", required: true },
+    { name: "providerAccountId", type: "text", required: true },
+    { name: "type", type: "text" },
+
+    // Add these:
+    {
+      name: "access_token", type: "text", admin: { disabled: true }, access: {
+        read: payloadAcl.ownOnly
       },
     },
-    { name: 'enabled', type: 'checkbox', label: 'Enabled', defaultValue: true },
-    {
-      name: "accounts",
-      type: "array",
-      admin: { disabled: false }, // optional
-      fields: [
-        { name: "provider", type: "text", required: true },
-        { name: "providerAccountId", type: "text", required: true },
-        { name: "type", type: "text" },
+    { name: "refresh_token", type: "text", admin: { disabled: true }, access: {
+        read: payloadAcl.ownOnly
+      },
+    },
+    { name: "expires_at", type: "number", admin: { disabled: true }, access: {
+        read: payloadAcl.ownOnly
+      },
+    },
+    { name: "id_token", type: "text", admin: { disabled: true }, access: {
+        read: payloadAcl.ownOnly
+      },
+    },
+    { name: "token_type", type: "text", admin: { disabled: true }, access: {
+        read: payloadAcl.ownOnly
+      },
+    },
+    { name: "scope", type: "text", admin: { disabled: true }, access: {
+        read: payloadAcl.ownOnly
+      },
+    },
+    { name: "session_state", type: "text", admin: { disabled: true }, access: {
+        read: payloadAcl.ownOnly
+      },
+    },
+  ],
+}];
 
-        // Add these:
-        { name: "access_token", type: "text", admin: { disabled: true } },
-        { name: "refresh_token", type: "text", admin: { disabled: true } },
-        { name: "expires_at", type: "number", admin: { disabled: true } },
-        { name: "id_token", type: "text", admin: { disabled: true } },
-        { name: "token_type", type: "text", admin: { disabled: true } },
-        { name: "scope", type: "text", admin: { disabled: true } },
-        { name: "session_state", type: "text", admin: { disabled: true } },
-      ],
-    }];
+export const payloadAuthConfig = {
 
-export const payloadAuthConfig = { 
-  
   userCollectionDatabaseFields,
   persistTokens,
-  
-  profileRoles 
+
+  profileRoles
 };
