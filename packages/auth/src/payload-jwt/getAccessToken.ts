@@ -19,7 +19,7 @@ export async function getAccessToken(payload: Payload, userId: string) {
   }
 
   // Decrypt the access token
-  const decryptedAccessToken = decryptToken(kc.access_token, secret);
+  const decryptedAccessToken = decryptToken(kc.access_token, secret, userId);
   if (!decryptedAccessToken) return null;
 
   const expiresAt = kc.expires_at ?? 0;
@@ -27,7 +27,7 @@ export async function getAccessToken(payload: Payload, userId: string) {
   if (stillValid) return decryptedAccessToken;
 
   // Refresh if needed
-  const decryptedRefreshToken = decryptToken(kc.refresh_token, secret);
+  const decryptedRefreshToken = decryptToken(kc.refresh_token, secret, userId);
   if (!decryptedRefreshToken) return null;
 
   const resp = await fetch(`${process.env.OAUTH_ISSUER}/protocol/openid-connect/token`, {
@@ -52,10 +52,10 @@ export async function getAccessToken(payload: Payload, userId: string) {
     a?.provider === "keycloak"
       ? {
           ...a,
-          access_token: encryptToken(json.access_token, secret),
+          access_token: encryptToken(json.access_token, secret, userId),
           expires_at: newExpiresAt,
           // Use new refresh token if provided, otherwise keep the existing encrypted one
-          refresh_token: json.refresh_token ? encryptToken(json.refresh_token, secret) : a.refresh_token,
+          refresh_token: json.refresh_token ? encryptToken(json.refresh_token, secret, userId) : a.refresh_token,
         }
       : a
   );

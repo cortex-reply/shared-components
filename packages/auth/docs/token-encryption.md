@@ -9,7 +9,7 @@ All `access_token` and `refresh_token` values in the Users collection accounts a
 ## Encryption Method
 
 - **Algorithm**: AES-256-GCM (Authenticated Encryption with Associated Data)
-- **Key Derivation**: SHA-256 hash of PAYLOAD_SECRET environment variable
+- **Key Derivation**: SHA-256 hash of PAYLOAD_SECRET environment variable combined with user ID
 - **IV**: Random 12-byte initialization vector generated for each encryption
 - **Format**: `iv:authTag:encryptedData` (all hex-encoded)
 
@@ -18,7 +18,8 @@ All `access_token` and `refresh_token` values in the Users collection accounts a
 1. **Reversible Encryption**: Tokens can be decrypted when needed for API calls
 2. **Unique IVs**: Each encryption uses a unique random initialization vector
 3. **Authentication**: GCM mode provides authentication tags to prevent tampering
-4. **Key Management**: Uses existing PAYLOAD_SECRET environment variable
+4. **Per-User Encryption**: Each user's tokens are encrypted with a unique key derived from PAYLOAD_SECRET and their user ID
+5. **Key Management**: Uses existing PAYLOAD_SECRET environment variable combined with user ID
 
 ## Usage
 
@@ -51,27 +52,30 @@ Requires `PAYLOAD_SECRET` environment variable to be set. This is used as the en
 
 ## Security Considerations
 
-1. **PAYLOAD_SECRET must be kept secure** - anyone with access to this secret can decrypt stored tokens
-2. **Rotate PAYLOAD_SECRET carefully** - changing it will make existing encrypted tokens unreadable
-3. **Backup strategy** - ensure proper backup procedures are in place before rotating keys
-4. **Audit logs** - warnings are logged when unencrypted tokens are encountered
+1. **PAYLOAD_SECRET must be kept secure** - anyone with access to this secret and a user ID can decrypt that user's tokens
+2. **User ID isolation** - tokens are encrypted per-user, so compromising one user's encryption key doesn't affect other users
+3. **Rotate PAYLOAD_SECRET carefully** - changing it will make existing encrypted tokens unreadable for all users
+4. **Backup strategy** - ensure proper backup procedures are in place before rotating keys
+5. **Audit logs** - warnings are logged when unencrypted tokens are encountered
 
 ## Functions
 
-### `encryptToken(token, secret)`
+### `encryptToken(token, secret, userId)`
 Encrypts a token string using AES-256-GCM.
 
 **Parameters:**
 - `token` (string | null | undefined): The token to encrypt
 - `secret` (string): The encryption key (typically PAYLOAD_SECRET)
+- `userId` (string): The user ID to include in key derivation
 
 **Returns:** Encrypted token string or null
 
-### `decryptToken(encryptedToken, secret)`
+### `decryptToken(encryptedToken, secret, userId)`
 Decrypts a token that was encrypted with encryptToken.
 
 **Parameters:**
 - `encryptedToken` (string | null | undefined): The encrypted token
 - `secret` (string): The encryption key (typically PAYLOAD_SECRET)
+- `userId` (string): The user ID to include in key derivation
 
 **Returns:** Decrypted token string or null

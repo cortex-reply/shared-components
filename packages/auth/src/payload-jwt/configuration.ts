@@ -6,7 +6,7 @@ import { encryptToken } from '../crypto'
 
 type AccountType = NonNullable<User['accounts']>[number]
 
-function upsertAccount(existing: AccountType[] = [], account: AccountType) {
+function upsertAccount(existing: AccountType[] = [], account: AccountType, userId: string) {
   const provider = account.provider
   const providerAccountId = account.providerAccountId
 
@@ -27,8 +27,8 @@ function upsertAccount(existing: AccountType[] = [], account: AccountType) {
     type: account.type,
 
     // Encrypt tokens before storing (must match your Users.accounts[] schema)
-    access_token: encryptToken(account.access_token, secret),
-    refresh_token: encryptToken(account.refresh_token, secret),
+    access_token: encryptToken(account.access_token, secret, userId),
+    refresh_token: encryptToken(account.refresh_token, secret, userId),
     expires_at: account.expires_at ?? null,
     id_token: account.id_token ?? null,
     token_type: account.token_type ?? null,
@@ -64,7 +64,7 @@ async function persistTokens(userId: string, account: AccountType, payloadConfig
   })
 
   const existing = (fullUser as User).accounts ?? []
-  const accounts = upsertAccount(existing, account)
+  const accounts = upsertAccount(existing, account, userId)
   let role = 'user'; // default role
   if (account && account.access_token) {
     const decodedJWT = decodeJwt(account.access_token);

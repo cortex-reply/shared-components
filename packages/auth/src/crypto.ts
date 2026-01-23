@@ -4,14 +4,16 @@ import { createHash, createCipheriv, createDecipheriv, randomBytes } from 'node:
  * Encrypts a token using AES-256-GCM encryption
  * @param token - The token string to encrypt
  * @param secret - The encryption key (PAYLOAD_SECRET)
+ * @param userId - The user ID to include in key derivation
  * @returns The encrypted token in format: iv:authTag:encryptedData (hex encoded)
  */
-export function encryptToken(token: string | null | undefined, secret: string): string | null {
+export function encryptToken(token: string | null | undefined, secret: string, userId: string): string | null {
   if (!token) return null;
   
   try {
-    // Generate a 32-byte key from the secret using SHA-256
-    const key = createHash('sha256').update(secret).digest();
+    // Generate a 32-byte key from the secret and userId using SHA-256
+    // Combine PAYLOAD_SECRET with userId for per-user encryption keys
+    const key = createHash('sha256').update(secret).update(userId).digest();
     
     // Generate a random 12-byte initialization vector
     const iv = randomBytes(12);
@@ -38,9 +40,10 @@ export function encryptToken(token: string | null | undefined, secret: string): 
  * Decrypts a token that was encrypted with encryptToken
  * @param encryptedToken - The encrypted token string in format: iv:authTag:encryptedData
  * @param secret - The encryption key (PAYLOAD_SECRET)
+ * @param userId - The user ID to include in key derivation
  * @returns The decrypted token string
  */
-export function decryptToken(encryptedToken: string | null | undefined, secret: string): string | null {
+export function decryptToken(encryptedToken: string | null | undefined, secret: string, userId: string): string | null {
   if (!encryptedToken) return null;
   
   try {
@@ -55,8 +58,9 @@ export function decryptToken(encryptedToken: string | null | undefined, secret: 
     
     const [ivHex, authTagHex, encryptedData] = parts;
     
-    // Generate the same key from the secret
-    const key = createHash('sha256').update(secret).digest();
+    // Generate the same key from the secret and userId
+    // Must match the key generation in encryptToken
+    const key = createHash('sha256').update(secret).update(userId).digest();
     
     // Convert hex strings back to buffers
     const iv = Buffer.from(ivHex, 'hex');
