@@ -58,11 +58,6 @@ const editOwnProfile = ({ req: { user }, data }: AccessArgs<Partial<User>>): boo
     return user?.id === (data as User)?.id
 }
 
-const ownOnly = ({ req: { user }, data }: AccessArgs<Partial<User>>): boolean => {
-    // Allow users to edit their own record
-    return user?.id === (data as User)?.id
-}
-
 /**
  * Users can edit their own profile ONLY
  */
