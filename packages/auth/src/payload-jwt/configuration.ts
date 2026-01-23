@@ -3,6 +3,7 @@ import type { SanitizedConfig } from 'payload'
 import { decodeJwt } from 'jose'
 import { getPayload } from 'payload'
 import { payloadAcl } from '../payload-access/access.js'
+import { encryptToken } from '../crypto'
 type AccountType = NonNullable<User['accounts']>[number]
 
 // Add a more permissive type for incoming NextAuth accounts
@@ -20,7 +21,7 @@ type IncomingAccount = {
   [key: string]: any  // Allow additional properties
 }
 
-function upsertAccount(existing: AccountType[] = [], account: IncomingAccount): AccountType[] {
+function upsertAccount(existing: AccountType[] = [], account: IncomingAccount, userId: string): AccountType[] {
   const provider = account.provider
   const providerAccountId = account.providerAccountId
 
@@ -28,14 +29,20 @@ function upsertAccount(existing: AccountType[] = [], account: IncomingAccount): 
     (a: AccountType) => a.provider === provider && a.providerAccountId === providerAccountId
   )
 
+  // Get the PAYLOAD_SECRET for encryption
+  const secret = process.env.PAYLOAD_SECRET;
+  if (!secret) {
+    throw new Error('PAYLOAD_SECRET environment variable is required for token encryption');
+  }
+
   const nextRow: AccountType = {
     provider,
     providerAccountId,
     type: account.type as any,  // Cast to match AccountType
 
-    // token fields (must match your Users.accounts[] schema)
-    access_token: account.access_token ?? null,
-    refresh_token: account.refresh_token ?? null,
+    // Encrypt tokens before storing (must match your Users.accounts[] schema)
+    access_token: encryptToken(account.access_token, secret, userId),
+    refresh_token: encryptToken(account.refresh_token, secret, userId),
     expires_at: account.expires_at ?? null,
     id_token: account.id_token ?? null,
     token_type: account.token_type ?? null,
@@ -72,7 +79,7 @@ async function persistTokens(userId: string, account: IncomingAccount, payloadCo
   })
 
   const existing = (fullUser as User).accounts ?? []
-  const accounts = upsertAccount(existing, account)
+  const accounts = upsertAccount(existing, account, userId)
   let role = 'user'; // default role
   if (account && account.access_token) {
     const decodedJWT = decodeJwt(account.access_token);

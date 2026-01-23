@@ -1,5 +1,6 @@
 import type { User } from '@/types'
 import type { Payload } from 'payload'
+import { decryptToken, encryptToken } from '../crypto'
 
 type AccountRow = NonNullable<User['accounts']>[number]
 
@@ -7,14 +8,27 @@ export async function getAccessToken(payload: Payload, userId: string) {
   const user = await payload.findByID({ collection: "users", id: userId, depth: 0 });
 
   const kc = (user as Partial<User>)?.accounts?.find((a: AccountRow) => a.provider === "keycloak") as AccountRow | undefined;
-  if (!kc?.access_token) return null;
+  
+  // Check if keycloak account exists
+  if (!kc) return null;
+  
+  // Get the PAYLOAD_SECRET for decryption
+  const secret = process.env.PAYLOAD_SECRET;
+  if (!secret) {
+    throw new Error('PAYLOAD_SECRET environment variable is required for token decryption');
+  }
+
+  // Decrypt the access token
+  const decryptedAccessToken = decryptToken(kc.access_token, secret, userId);
+  if (!decryptedAccessToken) return null;
 
   const expiresAt = kc.expires_at ?? 0;
   const stillValid = expiresAt === 0 || Date.now() < expiresAt * 1000 - 30_000; // 30s skew
-  if (stillValid) return kc.access_token;
+  if (stillValid) return decryptedAccessToken;
 
   // Refresh if needed
-  if (!kc.refresh_token) return null;
+  const decryptedRefreshToken = decryptToken(kc.refresh_token, secret, userId);
+  if (!decryptedRefreshToken) return null;
 
   const resp = await fetch(`${process.env.OAUTH_ISSUER}/protocol/openid-connect/token`, {
     method: "POST",
@@ -23,7 +37,7 @@ export async function getAccessToken(payload: Payload, userId: string) {
       client_id: process.env.OAUTH_CLIENT_ID!,
       client_secret: process.env.OAUTH_CLIENT_SECRET!,
       grant_type: "refresh_token",
-      refresh_token: kc.refresh_token,
+      refresh_token: decryptedRefreshToken,
     }),
   });
 
@@ -33,14 +47,15 @@ export async function getAccessToken(payload: Payload, userId: string) {
 
   const newExpiresAt = Math.floor(Date.now() / 1000 + json.expires_in);
 
-  // Persist back into users.accounts[] (update your matching row logic as needed)
+  // Encrypt new tokens before persisting back into users.accounts[]
   const accounts = ((user as Partial<User>).accounts ?? []).map((a: AccountRow | undefined) =>
     a?.provider === "keycloak"
       ? {
           ...a,
-          access_token: json.access_token,
+          access_token: encryptToken(json.access_token, secret, userId),
           expires_at: newExpiresAt,
-          refresh_token: json.refresh_token ?? a.refresh_token,
+          // Use new refresh token if provided, otherwise keep the existing encrypted one
+          refresh_token: json.refresh_token ? encryptToken(json.refresh_token, secret, userId) : a.refresh_token,
         }
       : a
   );
