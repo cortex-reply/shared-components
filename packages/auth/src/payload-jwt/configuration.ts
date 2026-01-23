@@ -4,7 +4,6 @@ import { decodeJwt } from 'jose'
 import { getPayload } from 'payload'
 import { payloadAcl } from '../payload-access/access.js'
 import { encryptToken } from '../crypto'
-
 type AccountType = NonNullable<User['accounts']>[number]
 
 // Add a more permissive type for incoming NextAuth accounts

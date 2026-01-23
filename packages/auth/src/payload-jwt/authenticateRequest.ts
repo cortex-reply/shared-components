@@ -4,7 +4,9 @@ import { verifySession, verifyToken } from "./user";
 
 import { type Payload } from 'payload'
 
-import { NextAuthRequest } from "next-auth";
+import { type NextAuthRequest } from "next-auth";
+
+export type AuthRequest = NextAuthRequest
 
 interface AuthError extends Error {
     statusCode: number;
@@ -51,8 +53,13 @@ interface User {
     apiKeyIndex?: string | null;
 }
 
+export interface AuthenticateRequestOptions {
+    req: AuthRequest
+    payload: Payload
+}
 
-export async function authenticateRequest({ req, payload }: { req: NextAuthRequest, payload?: Payload }) {
+
+export async function authenticateRequest({ req, payload }: AuthenticateRequestOptions) {
     if (req.auth) {
         const user = req.auth.user as User
         return {
@@ -95,11 +102,8 @@ export async function authenticateRequest({ req, payload }: { req: NextAuthReque
             })
             console.log("Created new Payload user for Keycloak user:", newUser.id, newUser.email)
             return {
-                id: newUser.id,
-                email: newUser.email,
-                name: newUser.name,
-                role: newUser.role,
-                method: 'bearer',
+                
+                method: 'bearer', ...newUser
             }
         } else if (payloadUser) {
             // update user role if changed
@@ -116,85 +120,67 @@ export async function authenticateRequest({ req, payload }: { req: NextAuthReque
                 console.log(`Updated Payload user role for ${payloadUser.email} to ${permissions}`);
             }
 
-            return {
-                id: payloadUser.id,
-                email: payloadUser.email,
-                name: payloadUser.name,
-                role: permissions[0] || 'user',
-                method: 'bearer',
-            }
+            return { method: 'bearer', ...payloadUser }
         } else {
             throw createAuthError("No user found for the given session", 401);
         }
     }
 }
 
-export async function authenticateRequestHeaders({ headers, payload }: { headers: Headers, payload?: Payload }) {
-    if (headers.get('authorization')) {
-        
-        const session = await verifyToken(headers.get('authorization')!.replace('Bearer ', ''));
+export async function authenticateRequestHeaders({ headers, payload }: { headers: Headers, payload: Payload }) {
+    if (!headers.get('authorization')) {
+        throw createAuthError("No authorization header provided", 401);
+    }
 
-        if (!session || !session.sub || !session.extra) throw createAuthError("No valid session found", 401);
-        const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID!;
-        const permissions = ((session.resource_access as Record<string, { roles?: string[] }>)?.[OAUTH_CLIENT_ID]?.roles as string[] | undefined);
-        if (!permissions) throw createAuthError("User does not have permission to access this application.", 403);
+    const session = await verifyToken(headers.get('authorization')!.replace('Bearer ', ''));
 
-        if (!payload) throw createAuthError("Payload instance is required for Keycloak user normalisation", 500);
-        const payloadUser = (await payload.find({ collection: 'users', depth: 1, limit: 1, draft: false, overrideAccess: true, where: { email: { equals: session.extra.email } } })).docs[0]
+    if (!session || !session.sub || !session.extra) throw createAuthError("No valid session found", 401);
+    const OAUTH_CLIENT_ID = process.env.OAUTH_CLIENT_ID!;
+    const permissions = ((session.resource_access as Record<string, { roles?: string[] }>)?.[OAUTH_CLIENT_ID]?.roles as string[] | undefined);
+    if (!permissions) throw createAuthError("User does not have permission to access this application.", 403);
 
-        if (!payloadUser && session.extra) {
+    if (!payload) throw createAuthError("Payload instance is required for Keycloak user normalisation", 500);
+    const payloadUser = (await payload.find({ collection: 'users', depth: 1, limit: 1, draft: false, overrideAccess: true, where: { email: { equals: session.extra.email } } })).docs[0]
 
+    if (!payloadUser && session.extra) {
+        // create the user in Payload
+        const newUser = await payload.create({
+            collection: 'users',
+            data: {
+                email: session.extra.email,
+                name: session.extra.name,
+                role: permissions[0] || 'user',
+                enabled: true,
+                accounts: [
+                    {
+                        provider: 'keycloak', providerAccountId: session.sub, type: 'oidc',
+                    }
+                ],
+            },
+            draft: false,
+            overrideAccess: true,
+        })
+        console.log("Created new Payload user for Keycloak user:", newUser.id, newUser.email)
+        return { user: { ...newUser, collection: 'users' as const } }
 
-            // create the user in Payload
-            const newUser = await payload.create({
+    } else if (payloadUser) {
+        // update user role if changed
+        if (payloadUser.role !== permissions[0]) {
+            await payload.update({
                 collection: 'users',
+                id: payloadUser.id,
                 data: {
-                    email: session.extra.email,
-                    name: session.extra.name,
                     role: permissions[0] || 'user',
-                    enabled: true,
-                    accounts: [
-                        {
-                            provider: 'keycloak', providerAccountId: session.sub, type: 'oidc',
-                        }
-                    ],
                 },
                 draft: false,
                 overrideAccess: true,
             })
-            console.log("Created new Payload user for Keycloak user:", newUser.id, newUser.email)
-            return {
-                id: newUser.id,
-                email: newUser.email,
-                name: newUser.name,
-                role: newUser.role,
-                method: 'bearer',
-            }
-        } else if (payloadUser) {
-            // update user role if changed
-            if (payloadUser.role !== permissions[0]) {
-                await payload.update({
-                    collection: 'users',
-                    id: payloadUser.id,
-                    data: {
-                        role: permissions[0] || 'user',
-                    },
-                    draft: false,
-                    overrideAccess: true,
-                })
-                console.log(`Updated Payload user role for ${payloadUser.email} to ${permissions}`);
-            }
-
-            return {
-                id: payloadUser.id,
-                email: payloadUser.email,
-                name: payloadUser.name,
-                role: permissions[0] || 'user',
-                method: 'bearer',
-            }
-        } else {
-            throw createAuthError("No user found for the given session", 401);
+            console.log(`Updated Payload user role for ${payloadUser.email} to ${permissions}`);
         }
+
+        return { user: { ...payloadUser, collection: 'users' as const } }
+
+    } else {
+        throw createAuthError("No user found for the given session", 401);
     }
 }
-

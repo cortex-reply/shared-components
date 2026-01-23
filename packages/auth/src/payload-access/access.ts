@@ -64,6 +64,14 @@ const ownOnly = ({ req: { user }, data }: AccessArgs<Partial<User>>): boolean =>
 }
 
 /**
+ * Users can edit their own profile ONLY
+ */
+const ownOnly = ({ req: { user }, data }: AccessArgs<Partial<User>>): boolean => {
+    // Allow users to edit their own record
+    return user?.id === (data as User)?.id
+}
+
+/**
  * can edit owned items
  */
 const isOwned = ({ req: { user } }: AccessArgs<Partial<User>>): boolean | Where => {

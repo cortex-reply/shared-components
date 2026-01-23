@@ -128,7 +128,8 @@ Optionally, we can also store the auth tokens in the database to be used for onw
 
 ```js
 //.. existing imports
-import { payloadAuthConfig } from 'cortex-auth';
+import type { CollectionConfig, Field } from 'payload'
+import { payloadAuthConfig, authenticateRequestHeaders } from 'cortex-auth';
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -140,10 +141,21 @@ export const Users: CollectionConfig = {
       },
     }),
   },
+  auth: {
+    strategies: [
+      {
+        name: 'bearer-strategy',
+        authenticate: async ({ payload, headers }) => {
+          const result = await authenticateRequestHeaders({headers, payload})
+          return result as any
+        },
+      },
+    ],
+  },
   // existing config
   fields: [
     // any other fields
-    ...payloadAuthConfig.userCollectionDatabaseFields,
+    ...payloadAuthConfig.userCollectionDatabaseFields as Field[],
   ],
 }
 ```
@@ -178,12 +190,12 @@ secret: process.env.PAYLOAD_SECRET,
   events: {
   // fires when an OAuth account is linked  [NextAuth](https://next-auth.js.org/configuration/events)
   async linkAccount({ user, account }) {
-    await payloadAuthConfig.persistTokens(user.id, account, payloadConfig)
+    if (account && user.id) await payloadAuthConfig.persistTokens(user.id, account, payloadConfig)
   },
 
   // fires on every sign-in  [NextAuth](https://next-auth.js.org/configuration/events)
   async signIn({ user, account }) {
-    if (account) await payloadAuthConfig.persistTokens(user.id, account, payloadConfig)
+    if (account && user.id) await payloadAuthConfig.persistTokens(user.id, account, payloadConfig)
   },
 }
 };
@@ -194,6 +206,8 @@ declare module "next-auth" {
   }
 }
 ```
+
+
 
 #### Example API
 
@@ -213,6 +227,28 @@ export const GET = auth(async (req) => {
 
   return Response.json({message : session.user, token: `${token.slice(0,15)}......`}, { status: 200 });
 });
+```
+
+
+#### Example Protected Page / API
+
+```js
+import { auth } from "@/lib/auth"
+import { authenticateRequest, type AuthError } from "cortex-auth";
+
+import configPromise from '@payload-config'
+import { getPayload } from 'payload'
+
+export const GET = auth(async (req) => {
+    const payload = await getPayload({ config: configPromise })
+    try {
+        const user = await authenticateRequest({ req, payload })
+        return Response.json({ data: "Protected data", protection: user?.method, user }, { status: 200 })
+    } catch (e) {
+        return Response.json({ message: (e as AuthError).message }, { status: (e as AuthError).statusCode || 500 } )
+    }
+
+})
 ```
 
 

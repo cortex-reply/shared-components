@@ -1,6 +1,6 @@
 {
   "name": "cortex-auth",
-  "version": "0.0.1",
+  "version": "1.5.1",
   "description": "Shared authentication utilities for Node.js and Next.js applications",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
@@ -38,11 +38,17 @@
   },
   "peerDependencies": {
     "next": ">=15.0.0",
-    "next-auth": "5.0.0-beta.30",
-    "payload": "^3.70.0"
+    "next-auth": ">=5.0.0-beta.30",
+    "payload": "^3.x"
   },
   "peerDependenciesMeta": {
     "next": {
+      "optional": true
+    },
+    "next-auth": {
+      "optional": true
+    },
+    "payload": {
       "optional": true
     }
   },
@@ -54,7 +60,7 @@
     "@typescript-eslint/parser": "^6.15.0",
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.37.5",
-    "next": "^15.0.0",
+    "next": "^15.5.9",
     "next-auth": "5.0.0-beta.30",
     "payload": "^3.70.0",
     "tsc-alias": "^1.8.10",
