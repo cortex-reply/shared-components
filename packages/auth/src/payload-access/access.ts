@@ -58,6 +58,11 @@ const editOwnProfile = ({ req: { user }, data }: AccessArgs<Partial<User>>): boo
     return user?.id === (data as User)?.id
 }
 
+const ownOnly = ({ req: { user }, data }: AccessArgs<Partial<User>>): boolean => {
+    // Allow users to edit their own record
+    return user?.id === (data as User)?.id
+}
+
 /**
  * can edit owned items
  */
@@ -135,4 +140,5 @@ export const payloadAcl = {
     isOwned,
     isMember,
     isMemberOrOwner,
+    ownOnly,
 }
