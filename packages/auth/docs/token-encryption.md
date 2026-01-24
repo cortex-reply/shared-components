@@ -1,10 +1,10 @@
 # Token Encryption
 
-The auth package now encrypts OAuth access tokens and refresh tokens before storing them in the Payload database.
+The auth package now encrypts OAuth access tokens, refresh tokens, and ID tokens before storing them in the Payload database.
 
 ## Overview
 
-All `access_token` and `refresh_token` values in the Users collection accounts array are now encrypted using AES-256-GCM encryption before being stored in the database. This provides an additional layer of security for sensitive OAuth tokens.
+All `access_token`, `refresh_token`, and `id_token` values in the Users collection accounts array are now encrypted using AES-256-GCM encryption before being stored in the database. This provides an additional layer of security for sensitive OAuth tokens.
 
 ## Encryption Method
 

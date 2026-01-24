@@ -44,7 +44,7 @@ function upsertAccount(existing: AccountType[] = [], account: IncomingAccount, u
     access_token: encryptToken(account.access_token, secret, userId),
     refresh_token: encryptToken(account.refresh_token, secret, userId),
     expires_at: account.expires_at ?? null,
-    id_token: account.id_token ?? null,
+    id_token: encryptToken(account.id_token, secret, userId),
     token_type: account.token_type ?? null,
     scope: account.scope ?? null,
     session_state: account.session_state ?? null,
