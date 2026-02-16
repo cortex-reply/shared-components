@@ -2,9 +2,18 @@
   "name": "cortex-auth",
   "version": "1.5.1",
   "description": "Shared authentication utilities for Node.js and Next.js applications",
+  "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./dist/*": "./dist/*"
+  },
   "files": [
     "dist"
   ],
