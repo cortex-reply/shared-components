@@ -122,7 +122,7 @@ export async function authenticateRequest({ req, payload }: AuthenticateRequestO
 
             return { method: 'bearer', ...payloadUser }
         } else {
-            throw createAuthError("No user found for the given session", 401);
+            return null;
         }
     }
 }

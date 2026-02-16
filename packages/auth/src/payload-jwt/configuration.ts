@@ -18,7 +18,7 @@ type IncomingAccount = {
   token_type?: string | null
   scope?: string | null
   session_state?: string | null
-  [key: string]: any  // Allow additional properties
+  [key: string]: unknown  // Allow additional properties
 }
 
 function upsertAccount(existing: AccountType[] = [], account: IncomingAccount, userId: string): AccountType[] {
@@ -38,7 +38,7 @@ function upsertAccount(existing: AccountType[] = [], account: IncomingAccount, u
   const nextRow: AccountType = {
     provider,
     providerAccountId,
-    type: account.type as any,  // Cast to match AccountType
+    type: account.type as 'oidc' | 'oauth' | 'email' | 'webauthn',  // Cast to match AccountType
 
     // Encrypt tokens before storing (must match your Users.accounts[] schema)
     access_token: encryptToken(account.access_token, secret, userId),
