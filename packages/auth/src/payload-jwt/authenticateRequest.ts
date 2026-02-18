@@ -129,7 +129,7 @@ export async function authenticateRequest({ req, payload }: AuthenticateRequestO
 
 export async function authenticateRequestHeaders({ headers, payload }: { headers: Headers, payload: Payload }) {
     if (!headers.get('authorization')) {
-        throw createAuthError("No authorization header provided", 401);
+        return null
     }
 
     const session = await verifyToken(headers.get('authorization')!.replace('Bearer ', ''));
@@ -181,6 +181,6 @@ export async function authenticateRequestHeaders({ headers, payload }: { headers
         return { user: { ...payloadUser, collection: 'users' as const } }
 
     } else {
-        throw createAuthError("No user found for the given session", 401);
+        return null;
     }
 }

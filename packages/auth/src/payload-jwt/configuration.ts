@@ -58,12 +58,27 @@ function upsertAccount(existing: AccountType[] = [], account: IncomingAccount, u
   return [...existing, nextRow]
 }
 
+
+type ValidRole = 'user' | 'admin' | 'digital-colleague'
+const validRoles: Record<string, ValidRole> = {
+  'admin': 'admin',
+  'digital-colleague': 'digital-colleague',
+  'user': 'user',
+}
+
 function profileRoles(profile: { sub: string;[key: string]: unknown }, tokens: { access_token?: string;[key: string]: unknown }) {
   let role = 'user'; // default role
   if (tokens && tokens.access_token) {
     const decodedJWT = decodeJwt(tokens.access_token);
     const permissions = ((decodedJWT.resource_access as Record<string, { roles?: string[] }>)?.[process.env.OAUTH_CLIENT_ID!]?.roles as string[] | undefined);
-    role = permissions?.[0] || 'user';
+    if (permissions && Array.isArray(permissions)) {
+      for (const permission of permissions) {
+        if (validRoles[permission]) {
+          role = validRoles[permission];
+          break;
+        }
+      }
+    }
   }
   return { id: profile.sub, role, ...profile }
 }
@@ -84,7 +99,14 @@ async function persistTokens(userId: string, account: IncomingAccount, payloadCo
   if (account && account.access_token) {
     const decodedJWT = decodeJwt(account.access_token);
     const permissions = ((decodedJWT.resource_access as Record<string, { roles?: string[] }>)?.[process.env.OAUTH_CLIENT_ID!]?.roles as string[] | undefined);
-    role = permissions?.[0] || 'user';
+    if (permissions && Array.isArray(permissions)) {
+      for (const permission of permissions) {
+        if (validRoles[permission]) {
+          role = validRoles[permission];
+          break;
+        }
+      }
+    }
   }
   await payload.update({
     collection: "users",
@@ -133,27 +155,33 @@ const userCollectionDatabaseFields = [{
         read: payloadAcl.ownOnly
       },
     },
-    { name: "refresh_token", type: "text", admin: { disabled: true }, access: {
+    {
+      name: "refresh_token", type: "text", admin: { disabled: true }, access: {
         read: payloadAcl.ownOnly
       },
     },
-    { name: "expires_at", type: "number", admin: { disabled: true }, access: {
+    {
+      name: "expires_at", type: "number", admin: { disabled: true }, access: {
         read: payloadAcl.ownOnly
       },
     },
-    { name: "id_token", type: "text", admin: { disabled: true }, access: {
+    {
+      name: "id_token", type: "text", admin: { disabled: true }, access: {
         read: payloadAcl.ownOnly
       },
     },
-    { name: "token_type", type: "text", admin: { disabled: true }, access: {
+    {
+      name: "token_type", type: "text", admin: { disabled: true }, access: {
         read: payloadAcl.ownOnly
       },
     },
-    { name: "scope", type: "text", admin: { disabled: true }, access: {
+    {
+      name: "scope", type: "text", admin: { disabled: true }, access: {
         read: payloadAcl.ownOnly
       },
     },
-    { name: "session_state", type: "text", admin: { disabled: true }, access: {
+    {
+      name: "session_state", type: "text", admin: { disabled: true }, access: {
         read: payloadAcl.ownOnly
       },
     },
